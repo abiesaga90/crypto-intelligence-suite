@@ -85,19 +85,42 @@ export const APP_CONFIG = {
   }
 };
 
-// Color schemes for the dashboard
+// Color schemes for the Teroxx Terminal dashboard
 export const COLORS = {
-  primary: '#3B82F6',
-  secondary: '#8B5CF6',
-  success: '#10B981',
-  warning: '#F59E0B',
-  error: '#EF4444',
-  retail: '#FF6B6B',
-  institutional: '#4ECDC4',
-  neutral: '#9CA3AF',
-  background: '#1F2937',
-  surface: '#374151',
-  text: '#F9FAFB'
+  // Teroxx Brand Colors
+  nightblue: '#010626',      // Nightblue - primary dark
+  electricSky: '#0b688c',    // Electric Sky - primary accent  
+  sandstone: '#bfb3a8',      // Sandstone - neutral/text
+  sunsetEmber: '#d06643',    // Sunset Ember - warning/accent
+  deepIndigo: '#060043',     // Deep Indigo - secondary dark
+  white: '#ffffff',          // White
+  black: '#000000',          // Black
+
+  // Functional color mapping using Teroxx palette
+  primary: '#0b688c',        // Electric Sky
+  secondary: '#d06643',      // Sunset Ember  
+  success: '#0b688c',        // Electric Sky for success
+  warning: '#d06643',        // Sunset Ember for warnings
+  error: '#d06643',          // Sunset Ember for errors
+  retail: '#d06643',         // Sunset Ember for retail
+  institutional: '#0b688c',  // Electric Sky for institutional
+  neutral: '#bfb3a8',        // Sandstone for neutral text
+  background: '#010626',     // Nightblue for main background
+  surface: '#060043',        // Deep Indigo for surfaces
+  text: '#bfb3a8',          // Sandstone for main text
+
+  // Chart-specific colors using Teroxx palette
+  chart: {
+    grid: '#bfb3a8',         // Sandstone for grid lines
+    text: '#bfb3a8',         // Sandstone for chart text
+    axis: '#bfb3a8',         // Sandstone for axis
+    background: '#060043',   // Deep Indigo for chart backgrounds
+    retail: '#d06643',       // Sunset Ember for retail data
+    institutional: '#0b688c', // Electric Sky for institutional data
+    positive: '#0b688c',     // Electric Sky for positive values
+    negative: '#d06643',     // Sunset Ember for negative values
+    neutral: '#bfb3a8'       // Sandstone for neutral values
+  }
 };
 
 // TOP 30 CRYPTOCURRENCIES for analysis
