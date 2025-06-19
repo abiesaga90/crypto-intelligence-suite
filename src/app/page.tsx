@@ -36,6 +36,7 @@ import TeroxxLogo from '@/components/TeroxxLogo';
 interface DashboardData {
   marketOverview: any;
   topCoins: any[];
+  topGainersData?: any;
   retailVsInstitutional: any[];
   globalStats: any;
   loading: boolean;
@@ -78,11 +79,11 @@ export default function CryptoDashboard() {
         setTimeout(() => reject(new Error('Request timeout after 30 seconds')), FETCH_TIMEOUT);
       });
 
-      // Fetch basic market data first with better mobile handling
-      console.log('Fetching basic market data...');
+      // Fetch basic market data and top gainers with better mobile handling
+      console.log('Fetching market data and top gainers...');
       console.log('User agent:', typeof window !== 'undefined' ? window.navigator.userAgent : 'Server-side');
       
-      const [coinGeckoData, binanceData] = await Promise.race([
+      const [coinGeckoData, binanceData, topGainers] = await Promise.race([
         Promise.all([
           apiService.getCoinGeckoTopCoins(30).catch((error) => {
             console.error('CoinGecko error:', error);
@@ -108,12 +109,17 @@ export default function CryptoDashboard() {
             });
             return null;
           }),
+          apiService.getTopGainers(12).catch((error) => {
+            console.error('Top Gainers error:', error);
+            return null;
+          }),
         ]),
         timeoutPromise
-      ]) as [any, any];
+      ]) as [any, any, any];
 
       console.log('CoinGecko data:', coinGeckoData ? `Success (${coinGeckoData.length} coins)` : 'Failed');
       console.log('Binance data:', binanceData ? 'Success' : 'Failed');
+      console.log('Top Gainers data:', topGainers ? `Success (${topGainers.data?.length || 0} gainers from ${topGainers.source})` : 'Failed');
 
       // If both APIs fail on mobile, provide fallback data
       if (!coinGeckoData && !binanceData) {
@@ -133,6 +139,11 @@ export default function CryptoDashboard() {
             binance: [],
           },
           topCoins: fallbackData,
+          topGainersData: {
+            data: fallbackData,
+            source: 'fallback',
+            timestamp: Date.now()
+          },
           retailVsInstitutional: [],
           globalStats: {
             total_market_cap: { usd: 1750000000000 },
@@ -201,18 +212,19 @@ export default function CryptoDashboard() {
       console.log('- Retail vs institutional data points:', validData.length);
       console.log('- Global stats:', globalStats ? 'Available' : 'Not available');
 
-      setData({
-        marketOverview: {
-          coinGecko: coinGeckoData,
-          binance: Array.isArray(binanceData) ? binanceData.slice(0, 30) : binanceData ? [binanceData] : [],
-        },
-        topCoins: coinGeckoData || [],
-        retailVsInstitutional: validData,
-        globalStats: globalStats?.data || null,
-        loading: false,
-        error: null,
-        lastUpdate: Date.now(),
-      });
+              setData({
+          marketOverview: {
+            coinGecko: coinGeckoData,
+            binance: Array.isArray(binanceData) ? binanceData.slice(0, 30) : binanceData ? [binanceData] : [],
+          },
+          topCoins: topGainers?.data || coinGeckoData || [],
+          topGainersData: topGainers,
+          retailVsInstitutional: validData,
+          globalStats: globalStats?.data || null,
+          loading: false,
+          error: null,
+          lastUpdate: Date.now(),
+        });
 
       console.log('Dashboard data fetch completed successfully');
 
@@ -609,16 +621,19 @@ function DashboardOverviewTab({ data, selectedCrypto, setSelectedCrypto }: {
 
       {/* Top Gainers Display */}
       <div className="mb-6 sm:mb-8">
-        <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 flex items-center space-x-2">
-          <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-green-400" />
-          <span>Top Gainers (24h)</span>
+        <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-green-400" />
+            <span>Top Gainers (24h)</span>
+          </div>
+          {data.topGainersData && (
+            <span className="text-xs sm:text-sm px-2 py-1 rounded" style={{ backgroundColor: COLORS.electricSky + '20', color: COLORS.electricSky }}>
+              via {data.topGainersData.source === 'coingecko' ? 'CoinGecko' : data.topGainersData.source === 'binance' ? 'Binance' : 'Cached'}
+            </span>
+          )}
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-          {data.topCoins
-            .filter((coin: any) => coin.price_change_percentage_24h > 0)
-            .sort((a: any, b: any) => (b.price_change_percentage_24h || 0) - (a.price_change_percentage_24h || 0))
-            .slice(0, 12)
-            .map((coin: any, index: number) => (
+          {(data.topCoins || []).map((coin: any, index: number) => (
             <div key={coin.id || index} className="bg-gray-800 p-3 sm:p-4 rounded-lg border border-gray-700 hover:border-gray-600 transition-colors">
               <div className="flex items-center space-x-2 sm:space-x-3">
                 {coin.image && (

@@ -131,6 +131,152 @@ class ApiService {
     }
   }
 
+  // ===== TOP GAINERS ENDPOINTS =====
+
+  async getTopGainersFromCoinGecko(limit: number = 12): Promise<any> {
+    const maxRetries = 3;
+    let retryCount = 0;
+
+    while (retryCount < maxRetries) {
+      try {
+        console.log(`Attempting CoinGecko Top Gainers API call (attempt ${retryCount + 1}/${maxRetries})`);
+        
+        // Get coins sorted by 24h percentage change (gainers)
+        const response = await this.coingeckoApi.get(API_CONFIG.alternatives.coingecko.endpoints.topGainers, {
+          params: {
+            vs_currency: 'usd',
+            order: 'price_change_percentage_24h_desc', // Sort by 24h change descending
+            per_page: limit * 2, // Get more to filter out negative ones
+            page: 1,
+            sparkline: false,
+            price_change_percentage: '1h,24h,7d'
+          }
+        });
+
+        // Filter only positive gainers and limit
+        const gainers = response.data
+          .filter((coin: any) => coin.price_change_percentage_24h > 0)
+          .slice(0, limit);
+
+        console.log(`CoinGecko Top Gainers API success: Received ${gainers.length} gainers`);
+        return gainers;
+      } catch (error) {
+        retryCount++;
+        console.error(`Error fetching CoinGecko top gainers (attempt ${retryCount}):`, error);
+        
+        if (retryCount >= maxRetries) {
+          console.error('CoinGecko Top Gainers API failed after all retries');
+          throw error;
+        }
+        
+        const delay = Math.min(1000 * Math.pow(2, retryCount - 1), 5000);
+        console.log(`Retrying CoinGecko Top Gainers API in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+
+  async getTopGainersFromBinance(limit: number = 12): Promise<any> {
+    const maxRetries = 3;
+    let retryCount = 0;
+
+    while (retryCount < maxRetries) {
+      try {
+        console.log(`Attempting Binance Top Gainers API call (attempt ${retryCount + 1}/${maxRetries})`);
+        
+        // Get all 24hr tickers
+        const response = await this.binanceApi.get(API_CONFIG.alternatives.binance.endpoints.topGainers);
+        
+        // Filter USDT pairs and sort by price change percentage
+        const gainers = response.data
+          .filter((ticker: any) => 
+            ticker.symbol.endsWith('USDT') && 
+            parseFloat(ticker.priceChangePercent) > 0 &&
+            parseFloat(ticker.volume) > 1000000 // Filter low volume coins
+          )
+          .sort((a: any, b: any) => parseFloat(b.priceChangePercent) - parseFloat(a.priceChangePercent))
+          .slice(0, limit)
+          .map((ticker: any) => ({
+            id: ticker.symbol.replace('USDT', '').toLowerCase(),
+            symbol: ticker.symbol.replace('USDT', ''),
+            name: ticker.symbol.replace('USDT', ''),
+            current_price: parseFloat(ticker.lastPrice),
+            price_change_percentage_24h: parseFloat(ticker.priceChangePercent),
+            volume: parseFloat(ticker.volume),
+            source: 'binance'
+          }));
+
+        console.log(`Binance Top Gainers API success: Received ${gainers.length} gainers`);
+        return gainers;
+      } catch (error) {
+        retryCount++;
+        console.error(`Error fetching Binance top gainers (attempt ${retryCount}):`, error);
+        
+        if (retryCount >= maxRetries) {
+          console.error('Binance Top Gainers API failed after all retries');
+          throw error;
+        }
+        
+        const delay = Math.min(1000 * Math.pow(2, retryCount - 1), 5000);
+        console.log(`Retrying Binance Top Gainers API in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+
+  async getTopGainers(limit: number = 12): Promise<any> {
+    try {
+      console.log('Fetching top gainers from multiple sources...');
+      
+      // Try CoinGecko first (more comprehensive data)
+      try {
+        const coinGeckoGainers = await this.getTopGainersFromCoinGecko(limit);
+        if (coinGeckoGainers && coinGeckoGainers.length > 0) {
+          console.log(`Using CoinGecko top gainers: ${coinGeckoGainers.length} coins`);
+          return {
+            data: coinGeckoGainers,
+            source: 'coingecko',
+            timestamp: Date.now()
+          };
+        }
+      } catch (error) {
+        console.warn('CoinGecko top gainers failed, trying Binance...', error);
+      }
+
+      // Fallback to Binance
+      try {
+        const binanceGainers = await this.getTopGainersFromBinance(limit);
+        if (binanceGainers && binanceGainers.length > 0) {
+          console.log(`Using Binance top gainers: ${binanceGainers.length} coins`);
+          return {
+            data: binanceGainers,
+            source: 'binance',
+            timestamp: Date.now()
+          };
+        }
+      } catch (error) {
+        console.warn('Binance top gainers failed...', error);
+      }
+
+      // Final fallback with sample data
+      console.log('All APIs failed, using fallback top gainers data');
+      return {
+        data: [
+          { id: 'avalanche', symbol: 'AVAX', name: 'Avalanche', current_price: 35, price_change_percentage_24h: 8.5, source: 'fallback' },
+          { id: 'chainlink', symbol: 'LINK', name: 'Chainlink', current_price: 15.2, price_change_percentage_24h: 7.3, source: 'fallback' },
+          { id: 'polygon', symbol: 'MATIC', name: 'Polygon', current_price: 0.85, price_change_percentage_24h: 6.8, source: 'fallback' },
+          { id: 'solana', symbol: 'SOL', name: 'Solana', current_price: 98, price_change_percentage_24h: 5.2, source: 'fallback' },
+          { id: 'cardano', symbol: 'ADA', name: 'Cardano', current_price: 0.45, price_change_percentage_24h: 4.9, source: 'fallback' }
+        ],
+        source: 'fallback',
+        timestamp: Date.now()
+      };
+    } catch (error) {
+      console.error('Error in getTopGainers:', error);
+      throw error;
+    }
+  }
+
   // ===== RETAIL vs INSTITUTIONAL ANALYSIS (Free APIs Only) =====
 
   async getRetailVsInstitutionalAnalysis(symbol: string): Promise<any> {

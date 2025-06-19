@@ -54,15 +54,28 @@ export const API_CONFIG = {
         coinsList: '/coins/list',
         coinsMarkets: '/coins/markets',
         coinData: '/coins',
-        globalData: '/global'
+        globalData: '/global',
+        trending: '/search/trending',
+        topGainers: '/coins/markets', // Same endpoint but with different params for gainers
+        categories: '/coins/categories'
       }
     },
     binance: {
       baseUrl: 'https://api.binance.com/api/v3',
       endpoints: {
         ticker24hr: '/ticker/24hr',
-        exchangeInfo: '/exchangeInfo'
+        exchangeInfo: '/exchangeInfo',
+        topGainers: '/ticker/24hr' // Same endpoint, sorted by priceChangePercent
       }
+    },
+    coinmarketcap: {
+      baseUrl: 'https://pro-api.coinmarketcap.com/v1',
+      endpoints: {
+        trending: '/cryptocurrency/trending/latest',
+        gainersLosers: '/cryptocurrency/trending/gainers-losers',
+        listings: '/cryptocurrency/listings/latest'
+      },
+      note: 'Requires API key for production use'
     }
   }
 };
