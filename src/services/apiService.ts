@@ -320,17 +320,17 @@ class ApiService {
     }
   }
 
-  async getTopGainersAndLosers(limit: number = 30): Promise<{ gainers: any[], losers: any[] }> {
+  async getTopGainersAndLosers(limit: number = 10): Promise<{ gainers: any[], losers: any[] }> {
     try {
-      console.log('Starting Top 30 Gainers & Losers API calls...');
+      console.log(`Starting Top ${limit} Gainers & Losers API calls...`);
       
-      // Try CoinGecko first (Pro API returns exactly 30 each, free API fallback also limits to 30)
+      // Try CoinGecko first (Pro API returns exactly 30 each, we'll slice to limit)
       try {
         const data = await this.getTopGainersAndLosersFromCoinGecko(30);
         console.log('Using CoinGecko data for gainers & losers');
         return {
-          gainers: data.gainers.map((coin: any) => ({ ...coin, source: 'CoinGecko' })),
-          losers: data.losers.map((coin: any) => ({ ...coin, source: 'CoinGecko' }))
+          gainers: data.gainers.slice(0, limit).map((coin: any) => ({ ...coin, source: 'CoinGecko' })),
+          losers: data.losers.slice(0, limit).map((coin: any) => ({ ...coin, source: 'CoinGecko' }))
         };
       } catch (error) {
         console.error('CoinGecko gainers & losers failed:', error);
@@ -338,28 +338,28 @@ class ApiService {
 
       // Fallback to mixed sources or cached data
       try {
-        const gainers = await this.getTopGainersFromBinance(30);
+        const gainers = await this.getTopGainersFromBinance(limit);
         console.log('Using Binance data for gainers, fallback for losers');
         return {
           gainers: gainers.map((coin: any) => ({ ...coin, source: 'Binance' })),
-          losers: this.getFallbackTopLosers(30)
+          losers: this.getFallbackTopLosers(limit)
         };
       } catch (error) {
         console.error('All APIs failed for gainers & losers');
       }
 
-      // Final fallback to cached data (30 each)
+      // Final fallback to cached data
       console.log('All APIs failed, using fallback data for gainers & losers');
       return {
-        gainers: this.getFallbackTopGainers(30),
-        losers: this.getFallbackTopLosers(30)
+        gainers: this.getFallbackTopGainers(limit),
+        losers: this.getFallbackTopLosers(limit)
       };
       
     } catch (error) {
       console.error('Error in getTopGainersAndLosers:', error);
       return {
-        gainers: this.getFallbackTopGainers(30),
-        losers: this.getFallbackTopLosers(30)
+        gainers: this.getFallbackTopGainers(limit),
+        losers: this.getFallbackTopLosers(limit)
       };
     }
   }
