@@ -494,7 +494,7 @@ export default function CryptoDashboard() {
           
           {/* Navigation Tabs Row */}
           <div className="border-t" style={{ borderColor: COLORS.deepIndigo }}>
-            <nav className="flex space-x-1 py-2 overflow-x-auto hide-scrollbar">
+            <nav className="flex space-x-1 py-2 overflow-x-auto hide-scrollbar" style={{ position: 'relative' }}>
               <button 
                 onClick={() => setActiveTab('overview')}
                 className="px-3 sm:px-6 py-2 sm:py-3 rounded-t-lg font-medium border-b-2 text-xs sm:text-sm whitespace-nowrap flex-shrink-0 transition-all focus-mobile"
@@ -511,7 +511,7 @@ export default function CryptoDashboard() {
               </button>
               
               {/* Market Dropdown */}
-              <div className="relative">
+              <div className="relative" style={{ position: 'static' }}>
                 <button 
                   onClick={() => {
                     setMarketDropdownOpen(!marketDropdownOpen);
@@ -530,42 +530,44 @@ export default function CryptoDashboard() {
                     <ChevronDown className={`h-3 w-3 sm:h-4 sm:w-4 transition-transform ${marketDropdownOpen ? 'rotate-180' : ''}`} />
                   </div>
                 </button>
-                
-                                 {/* Dropdown Menu */}
-                 {marketDropdownOpen && (
-                   <div 
-                     className="absolute top-full left-0 mt-1 py-2 w-48 rounded-lg shadow-xl border"
-                     style={{ 
-                       backgroundColor: COLORS.surface,
-                       borderColor: COLORS.deepIndigo,
-                       zIndex: 9999,
-                       boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
-                     }}
-                   >
-                                         <button
-                       onClick={() => {
-                         setActiveTab('gainers-losers');
-                         setMarketDropdownOpen(false);
-                       }}
-                       className="w-full px-4 py-2 text-left text-sm transition-colors"
-                       style={{ 
-                         color: COLORS.neutral
-                       }}
-                       onMouseEnter={(e) => e.currentTarget.style.backgroundColor = COLORS.electricSky + '20'}
-                       onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                     >
-                      <div className="flex items-center space-x-2">
-                        <TrendingUp className="h-4 w-4" />
-                        <TrendingDown className="h-4 w-4" />
-                        <span>Top 10 Gainers & Losers</span>
-                      </div>
-                    </button>
-                  </div>
-                )}
               </div>
               
+              {/* Market Dropdown Menu - Outside relative container */}
+              {marketDropdownOpen && (
+                <div 
+                  className="fixed py-2 w-48 rounded-lg shadow-xl border"
+                  style={{ 
+                    backgroundColor: COLORS.surface,
+                    borderColor: COLORS.deepIndigo,
+                    zIndex: 99999,
+                    top: '140px', // Approximate position below header
+                    left: '200px', // Approximate position
+                    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.1)'
+                  }}
+                >
+                  <button
+                    onClick={() => {
+                      setActiveTab('gainers-losers');
+                      setMarketDropdownOpen(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm transition-colors"
+                    style={{ 
+                      color: COLORS.neutral
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = COLORS.electricSky + '20'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    <div className="flex items-center space-x-2">
+                      <TrendingUp className="h-4 w-4" />
+                      <TrendingDown className="h-4 w-4" />
+                      <span>Top 10 Gainers & Losers</span>
+                    </div>
+                  </button>
+                </div>
+              )}
+              
               {/* Research Dropdown */}
-              <div className="relative">
+              <div className="relative" style={{ position: 'static' }}>
                 <button 
                   onClick={() => {
                     setResearchDropdownOpen(!researchDropdownOpen);
@@ -584,39 +586,41 @@ export default function CryptoDashboard() {
                     <ChevronDown className={`h-3 w-3 sm:h-4 sm:w-4 transition-transform ${researchDropdownOpen ? 'rotate-180' : ''}`} />
                   </div>
                 </button>
-                
-                                 {/* Dropdown Menu */}
-                 {researchDropdownOpen && (
-                   <div 
-                     className="absolute top-full left-0 mt-1 py-2 w-56 rounded-lg shadow-xl border"
-                     style={{ 
-                       backgroundColor: COLORS.surface,
-                       borderColor: COLORS.deepIndigo,
-                       zIndex: 9999,
-                       boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
-                     }}
-                   >
-                    <button
-                      onClick={() => {
-                        setActiveTab('analysis');
-                        setResearchDropdownOpen(false);
-                      }}
-                      className="w-full px-4 py-2 text-left text-sm transition-colors"
-                      style={{ 
-                        color: COLORS.neutral
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = COLORS.sunsetEmber + '20'}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                    >
-                      <div className="flex items-center space-x-2">
-                        <Users className="h-4 w-4" />
-                        <Building2 className="h-4 w-4" />
-                        <span>Retail vs Institutional Analysis</span>
-                      </div>
-                    </button>
-                  </div>
-                )}
               </div>
+              
+              {/* Research Dropdown Menu - Outside relative container */}
+              {researchDropdownOpen && (
+                <div 
+                  className="fixed py-2 w-56 rounded-lg shadow-xl border"
+                  style={{ 
+                    backgroundColor: COLORS.surface,
+                    borderColor: COLORS.deepIndigo,
+                    zIndex: 99999,
+                    top: '140px', // Approximate position below header
+                    left: '350px', // Approximate position further right
+                    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.1)'
+                  }}
+                >
+                  <button
+                    onClick={() => {
+                      setActiveTab('analysis');
+                      setResearchDropdownOpen(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm transition-colors"
+                    style={{ 
+                      color: COLORS.neutral
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = COLORS.sunsetEmber + '20'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    <div className="flex items-center space-x-2">
+                      <Users className="h-4 w-4" />
+                      <Building2 className="h-4 w-4" />
+                      <span>Retail vs Institutional Analysis</span>
+                    </div>
+                  </button>
+                </div>
+              )}
               
               <div 
                 className="px-6 py-3 rounded-t-lg font-medium text-sm opacity-50 cursor-not-allowed border-b-2 border-transparent flex-shrink-0 whitespace-nowrap"
