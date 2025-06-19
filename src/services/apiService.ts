@@ -324,7 +324,7 @@ class ApiService {
     try {
       console.log(`Starting Top ${limit} Gainers & Losers API calls...`);
       
-      // Try CoinGecko first (Pro API returns exactly 30 each, we'll slice to limit)
+      // Force CoinGecko first since it has logos and better data
       try {
         const data = await this.getTopGainersAndLosersFromCoinGecko(30);
         console.log('Using CoinGecko data for gainers & losers');
@@ -333,10 +333,39 @@ class ApiService {
           losers: data.losers.slice(0, limit).map((coin: any) => ({ ...coin, source: 'CoinGecko' }))
         };
       } catch (error) {
-        console.error('CoinGecko gainers & losers failed:', error);
+        console.error('CoinGecko gainers & losers failed, trying fallback with CoinGecko market data:', error);
+        
+        // Try getting data from regular CoinGecko market endpoint as backup
+        try {
+          const marketData = await this.getCoinGeckoTopCoins(100);
+          if (marketData && marketData.length > 0) {
+            // Filter and sort manually
+            const validCoins = marketData.filter((coin: any) => 
+              coin.total_volume > 50000 && 
+              coin.price_change_percentage_24h !== null
+            );
+            
+            const gainers = validCoins
+              .filter((coin: any) => coin.price_change_percentage_24h > 0)
+              .sort((a: any, b: any) => b.price_change_percentage_24h - a.price_change_percentage_24h)
+              .slice(0, limit)
+              .map((coin: any) => ({ ...coin, source: 'CoinGecko' }));
+              
+            const losers = validCoins
+              .filter((coin: any) => coin.price_change_percentage_24h < 0)
+              .sort((a: any, b: any) => a.price_change_percentage_24h - b.price_change_percentage_24h)
+              .slice(0, limit)
+              .map((coin: any) => ({ ...coin, source: 'CoinGecko' }));
+              
+            console.log('Using CoinGecko market data fallback');
+            return { gainers, losers };
+          }
+        } catch (fallbackError) {
+          console.error('CoinGecko market data fallback failed:', fallbackError);
+        }
       }
 
-      // Fallback to mixed sources or cached data
+      // Only use Binance as last resort (no logos)
       try {
         const gainers = await this.getTopGainersFromBinance(limit);
         console.log('Using Binance data for gainers, fallback for losers');
