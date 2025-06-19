@@ -471,7 +471,7 @@ export default function CryptoDashboard() {
                 <div className="flex items-center space-x-1 sm:space-x-2">
                   <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4" />
                   <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span>Top 100 G&L</span>
+                  <span>Top 30 G&L</span>
                 </div>
               </button>
               

@@ -37,7 +37,7 @@ const TopGainersLosers: React.FC = () => {
       setLoading(true);
       setError(null);
       
-      const result = await apiService.getTopGainersAndLosers(100);
+      const result = await apiService.getTopGainersAndLosers(30);
       
       setData(result);
       
@@ -212,7 +212,7 @@ const TopGainersLosers: React.FC = () => {
       <div className="p-4 lg:p-6 border-b border-gray-200 dark:border-gray-700">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-4">
           <h2 className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white mb-2 lg:mb-0">
-            Top 100 Crypto Gainers & Losers
+            Top 30 Crypto Gainers & Losers
           </h2>
           {apiSource && (
             <span className="text-xs text-gray-500 dark:text-gray-400 px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">
@@ -249,7 +249,7 @@ const TopGainersLosers: React.FC = () => {
       {/* Table */}
       <div className="overflow-x-auto">
         <HeaderRow />
-        <div className="max-h-[600px] overflow-y-auto">
+        <div className="max-h-[500px] overflow-y-auto">
           {currentData.length > 0 ? (
             currentData.map((coin, index) => (
               <CoinRow
@@ -273,7 +273,7 @@ const TopGainersLosers: React.FC = () => {
       {/* Footer */}
       <div className="p-4 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-700">
         <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
-          * Only showing coins with &gt;$50,000 24h volume • Updates every 5 minutes
+          * CoinGecko Pro API returns top 30 each • Only coins with &gt;$50,000 24h volume • Updates every 5 minutes
         </p>
       </div>
     </div>

@@ -133,58 +133,86 @@ class ApiService {
 
   // ===== TOP GAINERS ENDPOINTS =====
 
-  async getTopGainersAndLosersFromCoinGecko(limit: number = 100): Promise<any> {
+  async getTopGainersAndLosersFromCoinGecko(limit: number = 30): Promise<any> {
     const maxRetries = 3;
     let retryCount = 0;
 
     while (retryCount < maxRetries) {
       try {
-        console.log(`Attempting CoinGecko Top Gainers & Losers API call (attempt ${retryCount + 1}/${maxRetries})`);
+        console.log(`Attempting CoinGecko Pro API Top Gainers & Losers (attempt ${retryCount + 1}/${maxRetries})`);
         
-        // Get top 250 coins to have enough data for gainers and losers
-        const response = await this.coingeckoApi.get(API_CONFIG.alternatives.coingecko.endpoints.topGainers, {
+        // Try the dedicated Pro API endpoint first (returns top 30 each)
+        const response = await this.coingeckoApi.get('/coins/top_gainers_losers', {
           params: {
             vs_currency: 'usd',
-            order: 'market_cap_desc', // Get by market cap first to ensure quality coins
-            per_page: 250, // Get enough data to filter gainers and losers
-            page: 1,
-            sparkline: false,
-            price_change_percentage: '1h,24h,7d'
+            duration: '24h',
+            top_coins: '1000'
           }
         });
 
-        // Filter coins with sufficient volume (>$50,000 as per CoinGecko standard)
-        const validCoins = response.data.filter((coin: any) => 
-          coin.total_volume && 
-          coin.total_volume > 50000 && 
-          coin.price_change_percentage_24h !== null &&
-          coin.price_change_percentage_24h !== undefined
-        );
+        // Pro API returns structured data with top_gainers and top_losers arrays
+        const gainers = response.data.top_gainers || [];
+        const losers = response.data.top_losers || [];
 
-        // Separate gainers and losers, then sort each
-        const gainers = validCoins
-          .filter((coin: any) => coin.price_change_percentage_24h > 0)
-          .sort((a: any, b: any) => b.price_change_percentage_24h - a.price_change_percentage_24h)
-          .slice(0, limit);
-
-        const losers = validCoins
-          .filter((coin: any) => coin.price_change_percentage_24h < 0)
-          .sort((a: any, b: any) => a.price_change_percentage_24h - b.price_change_percentage_24h) // Ascending for losers (most negative first)
-          .slice(0, limit);
-
-        console.log(`CoinGecko Gainers & Losers API success: ${gainers.length} gainers, ${losers.length} losers`);
+        console.log(`CoinGecko Pro API success: ${gainers.length} gainers, ${losers.length} losers`);
         return { gainers, losers };
-      } catch (error) {
+        
+      } catch (error: any) {
         retryCount++;
-        console.error(`Error fetching CoinGecko gainers & losers (attempt ${retryCount}):`, error);
+        console.error(`CoinGecko Pro API failed (attempt ${retryCount}):`, error);
+        
+        // If it's a 403/401, likely means no Pro API access
+        if (error.response?.status === 403 || error.response?.status === 401) {
+          console.log('Pro API access denied, falling back to free tier method...');
+          throw new Error('Pro API required for top_gainers_losers endpoint');
+        }
         
         if (retryCount >= maxRetries) {
-          console.error('CoinGecko Gainers & Losers API failed after all retries');
-          throw error;
+          console.error('CoinGecko Pro API failed after all retries, attempting fallback...');
+          
+          // Fallback to free API method (get market data and filter)
+          try {
+            const response = await this.coingeckoApi.get(API_CONFIG.alternatives.coingecko.endpoints.topGainers, {
+              params: {
+                vs_currency: 'usd',
+                order: 'market_cap_desc',
+                per_page: 250,
+                page: 1,
+                sparkline: false,
+                price_change_percentage: '24h'
+              }
+            });
+
+            // Filter coins with sufficient volume (>$50,000 as per CoinGecko standard)
+            const validCoins = response.data.filter((coin: any) => 
+              coin.total_volume && 
+              coin.total_volume > 50000 && 
+              coin.price_change_percentage_24h !== null &&
+              coin.price_change_percentage_24h !== undefined
+            );
+
+            // Separate gainers and losers, then sort each (limit to 30 each like Pro API)
+            const gainers = validCoins
+              .filter((coin: any) => coin.price_change_percentage_24h > 0)
+              .sort((a: any, b: any) => b.price_change_percentage_24h - a.price_change_percentage_24h)
+              .slice(0, 30);
+
+            const losers = validCoins
+              .filter((coin: any) => coin.price_change_percentage_24h < 0)
+              .sort((a: any, b: any) => a.price_change_percentage_24h - b.price_change_percentage_24h)
+              .slice(0, 30);
+
+            console.log(`CoinGecko Free API fallback success: ${gainers.length} gainers, ${losers.length} losers`);
+            return { gainers, losers };
+            
+          } catch (fallbackError) {
+            console.error('Free API fallback also failed:', fallbackError);
+            throw fallbackError;
+          }
         }
         
         const delay = Math.min(1000 * Math.pow(2, retryCount - 1), 5000);
-        console.log(`Retrying CoinGecko Gainers & Losers API in ${delay}ms...`);
+        console.log(`Retrying CoinGecko API in ${delay}ms...`);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
@@ -292,13 +320,13 @@ class ApiService {
     }
   }
 
-  async getTopGainersAndLosers(limit: number = 100): Promise<{ gainers: any[], losers: any[] }> {
+  async getTopGainersAndLosers(limit: number = 30): Promise<{ gainers: any[], losers: any[] }> {
     try {
-      console.log('Starting Top Gainers & Losers API calls...');
+      console.log('Starting Top 30 Gainers & Losers API calls...');
       
-      // Try CoinGecko first
+      // Try CoinGecko first (Pro API returns exactly 30 each, free API fallback also limits to 30)
       try {
-        const data = await this.getTopGainersAndLosersFromCoinGecko(limit);
+        const data = await this.getTopGainersAndLosersFromCoinGecko(30);
         console.log('Using CoinGecko data for gainers & losers');
         return {
           gainers: data.gainers.map((coin: any) => ({ ...coin, source: 'CoinGecko' })),
@@ -310,50 +338,94 @@ class ApiService {
 
       // Fallback to mixed sources or cached data
       try {
-        const gainers = await this.getTopGainersFromBinance(Math.min(limit, 50));
+        const gainers = await this.getTopGainersFromBinance(30);
         console.log('Using Binance data for gainers, fallback for losers');
         return {
           gainers: gainers.map((coin: any) => ({ ...coin, source: 'Binance' })),
-          losers: this.getFallbackTopLosers(limit)
+          losers: this.getFallbackTopLosers(30)
         };
       } catch (error) {
         console.error('All APIs failed for gainers & losers');
       }
 
-      // Final fallback to cached data
+      // Final fallback to cached data (30 each)
       console.log('All APIs failed, using fallback data for gainers & losers');
       return {
-        gainers: this.getFallbackTopGainers(limit),
-        losers: this.getFallbackTopLosers(limit)
+        gainers: this.getFallbackTopGainers(30),
+        losers: this.getFallbackTopLosers(30)
       };
       
     } catch (error) {
       console.error('Error in getTopGainersAndLosers:', error);
       return {
-        gainers: this.getFallbackTopGainers(limit),
-        losers: this.getFallbackTopLosers(limit)
+        gainers: this.getFallbackTopGainers(30),
+        losers: this.getFallbackTopLosers(30)
       };
     }
   }
 
   private getFallbackTopGainers(limit: number): any[] {
-    return [
+    const gainers = [
       { id: 'avalanche', symbol: 'AVAX', name: 'Avalanche', current_price: 35, price_change_percentage_24h: 8.5, total_volume: 850000000, market_cap: 13000000000, source: 'fallback' },
       { id: 'chainlink', symbol: 'LINK', name: 'Chainlink', current_price: 15.2, price_change_percentage_24h: 7.3, total_volume: 720000000, market_cap: 8900000000, source: 'fallback' },
       { id: 'polygon', symbol: 'MATIC', name: 'Polygon', current_price: 0.85, price_change_percentage_24h: 6.8, total_volume: 560000000, market_cap: 7800000000, source: 'fallback' },
       { id: 'solana', symbol: 'SOL', name: 'Solana', current_price: 98, price_change_percentage_24h: 5.2, total_volume: 1200000000, market_cap: 42000000000, source: 'fallback' },
-      { id: 'cardano', symbol: 'ADA', name: 'Cardano', current_price: 0.45, price_change_percentage_24h: 4.9, total_volume: 380000000, market_cap: 15700000000, source: 'fallback' }
-    ].slice(0, limit);
+      { id: 'cardano', symbol: 'ADA', name: 'Cardano', current_price: 0.45, price_change_percentage_24h: 4.9, total_volume: 380000000, market_cap: 15700000000, source: 'fallback' },
+      { id: 'binancecoin', symbol: 'BNB', name: 'BNB', current_price: 310, price_change_percentage_24h: 4.2, total_volume: 1800000000, market_cap: 47000000000, source: 'fallback' },
+      { id: 'polkadot', symbol: 'DOT', name: 'Polkadot', current_price: 5.8, price_change_percentage_24h: 3.9, total_volume: 180000000, market_cap: 7200000000, source: 'fallback' },
+      { id: 'uniswap', symbol: 'UNI', name: 'Uniswap', current_price: 6.2, price_change_percentage_24h: 3.6, total_volume: 95000000, market_cap: 3700000000, source: 'fallback' },
+      { id: 'cosmos', symbol: 'ATOM', name: 'Cosmos', current_price: 8.1, price_change_percentage_24h: 3.3, total_volume: 85000000, market_cap: 3200000000, source: 'fallback' },
+      { id: 'filecoin', symbol: 'FIL', name: 'Filecoin', current_price: 4.2, price_change_percentage_24h: 3.0, total_volume: 105000000, market_cap: 2100000000, source: 'fallback' }
+    ];
+    
+    // Extend to 30 items with realistic decreasing percentages
+    for (let i = gainers.length; i < 30; i++) {
+      const baseGain = 2.8 - (i - 9) * 0.1;
+      gainers.push({
+        id: `crypto-${i}`,
+        symbol: `TOK${i}`,
+        name: `Token ${i}`,
+        current_price: Math.random() * 100,
+        price_change_percentage_24h: Math.max(0.1, baseGain),
+        total_volume: Math.random() * 500000000 + 100000000,
+        market_cap: Math.random() * 5000000000 + 500000000,
+        source: 'fallback'
+      });
+    }
+    
+    return gainers.slice(0, limit);
   }
 
   private getFallbackTopLosers(limit: number): any[] {
-    return [
+    const losers = [
       { id: 'terra-luna', symbol: 'LUNA', name: 'Terra Luna Classic', current_price: 0.000085, price_change_percentage_24h: -12.3, total_volume: 45000000, market_cap: 580000000, source: 'fallback' },
       { id: 'shiba-inu', symbol: 'SHIB', name: 'Shiba Inu', current_price: 0.0000087, price_change_percentage_24h: -8.7, total_volume: 125000000, market_cap: 5100000000, source: 'fallback' },
       { id: 'dogecoin', symbol: 'DOGE', name: 'Dogecoin', current_price: 0.073, price_change_percentage_24h: -6.2, total_volume: 320000000, market_cap: 10400000000, source: 'fallback' },
       { id: 'ripple', symbol: 'XRP', name: 'XRP', current_price: 0.51, price_change_percentage_24h: -5.8, total_volume: 890000000, market_cap: 27800000000, source: 'fallback' },
-      { id: 'litecoin', symbol: 'LTC', name: 'Litecoin', current_price: 67, price_change_percentage_24h: -4.1, total_volume: 420000000, market_cap: 5000000000, source: 'fallback' }
-    ].slice(0, limit);
+      { id: 'litecoin', symbol: 'LTC', name: 'Litecoin', current_price: 67, price_change_percentage_24h: -4.1, total_volume: 420000000, market_cap: 5000000000, source: 'fallback' },
+      { id: 'stellar', symbol: 'XLM', name: 'Stellar', current_price: 0.095, price_change_percentage_24h: -3.8, total_volume: 75000000, market_cap: 2800000000, source: 'fallback' },
+      { id: 'vechain', symbol: 'VET', name: 'VeChain', current_price: 0.021, price_change_percentage_24h: -3.5, total_volume: 35000000, market_cap: 1500000000, source: 'fallback' },
+      { id: 'tron', symbol: 'TRX', name: 'TRON', current_price: 0.063, price_change_percentage_24h: -3.2, total_volume: 280000000, market_cap: 5600000000, source: 'fallback' },
+      { id: 'monero', symbol: 'XMR', name: 'Monero', current_price: 158, price_change_percentage_24h: -2.9, total_volume: 65000000, market_cap: 2900000000, source: 'fallback' },
+      { id: 'iota', symbol: 'MIOTA', name: 'IOTA', current_price: 0.18, price_change_percentage_24h: -2.6, total_volume: 15000000, market_cap: 500000000, source: 'fallback' }
+    ];
+    
+    // Extend to 30 items with realistic decreasing negative percentages
+    for (let i = losers.length; i < 30; i++) {
+      const baseLoss = -2.3 + (i - 9) * 0.08;
+      losers.push({
+        id: `crypto-${i + 100}`,
+        symbol: `LOT${i}`,
+        name: `Loser Token ${i}`,
+        current_price: Math.random() * 50,
+        price_change_percentage_24h: Math.min(-0.1, baseLoss),
+        total_volume: Math.random() * 200000000 + 50000000,
+        market_cap: Math.random() * 2000000000 + 100000000,
+        source: 'fallback'
+      });
+    }
+    
+    return losers.slice(0, limit);
   }
 
   // ===== RETAIL vs INSTITUTIONAL ANALYSIS (Free APIs Only) =====
