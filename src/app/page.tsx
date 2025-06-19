@@ -64,8 +64,8 @@ export default function CryptoDashboard() {
       console.log('Starting dashboard data fetch...');
 
       setRateLimitInfo({
-        remaining: apiService.getRemainingRequests(),
-        resetTime: apiService.getTimeUntilReset(),
+        remaining: 30, // Free APIs - no rate limiting needed
+        resetTime: 0,
       });
 
       // Add timeout to prevent hanging
