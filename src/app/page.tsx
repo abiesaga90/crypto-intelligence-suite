@@ -815,7 +815,7 @@ function DashboardOverviewTab({ data, selectedCrypto, setSelectedCrypto }: {
   );
 }
 
-// Analysis Details Tab Component  
+// Research Tab Component - Retail vs Institutional Analysis
 function AnalysisDetailsTab({ data, selectedCrypto, setSelectedCrypto }: {
   data: DashboardData;
   selectedCrypto: string;
