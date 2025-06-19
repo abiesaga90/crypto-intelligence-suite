@@ -22,15 +22,15 @@ export default function RetailVsInstitutionalChart({
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-gray-800 rounded-lg p-6"
+        className="bg-gray-800 rounded-lg p-4 sm:p-6"
       >
-        <h3 className="text-lg font-semibold mb-4 flex items-center space-x-2">
-          <BarChart3 className="h-5 w-5 text-blue-500" />
-          <span>Retail vs Institutional Comparison</span>
+        <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 flex items-center space-x-2">
+          <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500 flex-shrink-0" />
+          <span className="truncate">Retail vs Institutional Comparison</span>
         </h3>
-        <div className="text-center text-gray-400 py-8">
-          <BarChart3 className="h-12 w-12 mx-auto mb-2 opacity-50" />
-          <p>No comparison data available</p>
+        <div className="text-center text-gray-400 py-6 sm:py-8">
+          <BarChart3 className="h-8 w-8 sm:h-12 sm:w-12 mx-auto mb-2 opacity-50" />
+          <p className="text-sm sm:text-base">No comparison data available</p>
         </div>
       </motion.div>
     );
@@ -51,7 +51,7 @@ export default function RetailVsInstitutionalChart({
   const pieData = selectedData ? [
     { name: 'Retail Signals', value: selectedData.analysis.signals.retailSignals, color: COLORS.retail },
     { name: 'Institutional Signals', value: selectedData.analysis.signals.institutionalSignals, color: COLORS.institutional },
-    { name: 'Neutral Signals', value: selectedData.analysis.signals.neutralSignals, color: COLORS.mixed },
+    { name: 'Neutral Signals', value: selectedData.analysis.signals.neutralSignals, color: COLORS.neutral },
   ] : [];
 
   const CustomTooltip = ({ active, payload, label }: any) => {
@@ -90,19 +90,19 @@ export default function RetailVsInstitutionalChart({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-gray-800 rounded-lg p-6"
+      className="bg-gray-800 rounded-lg p-4 sm:p-6"
     >
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold flex items-center space-x-2">
-          <BarChart3 className="h-5 w-5 text-blue-500" />
-          <span>Retail vs Institutional Analysis</span>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 space-y-3 sm:space-y-0">
+        <h3 className="text-base sm:text-lg font-semibold flex items-center space-x-2 min-w-0">
+          <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500 flex-shrink-0" />
+          <span className="truncate">Retail vs Institutional Analysis</span>
         </h3>
         
         {/* Symbol Selector */}
         <select
           value={selectedSymbol}
           onChange={(e) => onSymbolChange(e.target.value)}
-          className="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+          className="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500 text-sm sm:text-base focus-mobile flex-shrink-0"
         >
           {data.map(item => (
             <option key={item.symbol} value={item.symbol}>
@@ -112,11 +112,11 @@ export default function RetailVsInstitutionalChart({
         </select>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
         {/* Bar Chart - All Symbols Comparison */}
         <div>
-          <h4 className="text-md font-medium mb-4 text-gray-300">Signal Comparison Across Assets</h4>
-          <div className="h-80">
+          <h4 className="text-sm sm:text-base lg:text-md font-medium mb-3 sm:mb-4 text-gray-300">Signal Comparison Across Assets</h4>
+          <div className="h-64 sm:h-80">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={COLORS.chart.grid} />
@@ -144,7 +144,7 @@ export default function RetailVsInstitutionalChart({
                 />
                 <Bar 
                   dataKey="neutral" 
-                  fill={COLORS.mixed}
+                  fill={COLORS.neutral}
                   name="Neutral Signals"
                   radius={[2, 2, 0, 0]}
                 />
@@ -155,11 +155,11 @@ export default function RetailVsInstitutionalChart({
 
         {/* Pie Chart - Selected Symbol Detail */}
         <div>
-          <h4 className="text-md font-medium mb-4 text-gray-300">
+          <h4 className="text-sm sm:text-base lg:text-md font-medium mb-3 sm:mb-4 text-gray-300">
             Signal Distribution for {selectedSymbol}
           </h4>
           {pieData.length > 0 ? (
-            <div className="h-80 flex flex-col">
+            <div className="h-64 sm:h-80 flex flex-col">
               <div className="flex-1">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -167,8 +167,8 @@ export default function RetailVsInstitutionalChart({
                       data={pieData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={60}
-                      outerRadius={100}
+                      innerRadius={40}
+                      outerRadius={80}
                       paddingAngle={5}
                       dataKey="value"
                     >
@@ -182,17 +182,17 @@ export default function RetailVsInstitutionalChart({
               </div>
               
               {/* Legend and Details */}
-              <div className="mt-4 space-y-2">
+              <div className="mt-3 sm:mt-4 space-y-1 sm:space-y-2">
                 {pieData.map((entry, index) => (
                   <div key={index} className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-2 min-w-0 flex-1">
                       <div 
-                        className="w-3 h-3 rounded-full"
+                        className="w-3 h-3 rounded-full flex-shrink-0"
                         style={{ backgroundColor: entry.color }}
                       />
-                      <span className="text-sm">{entry.name}</span>
+                      <span className="text-xs sm:text-sm truncate">{entry.name}</span>
                     </div>
-                    <span className="text-sm font-medium">{entry.value}</span>
+                    <span className="text-xs sm:text-sm font-medium flex-shrink-0">{entry.value}</span>
                   </div>
                 ))}
               </div>

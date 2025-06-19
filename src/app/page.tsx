@@ -30,6 +30,9 @@ import MarketOverview from '@/components/MarketOverview';
 import CryptoCard from '@/components/CryptoCard';
 import RetailVsInstitutionalChart from '@/components/RetailVsInstitutionalChart';
 
+// Import Teroxx Logo
+import TeroxxLogo from '@/components/TeroxxLogo';
+
 interface DashboardData {
   marketOverview: any;
   topCoins: any[];
@@ -305,71 +308,85 @@ export default function CryptoDashboard() {
   return (
     <div className="min-h-screen text-white" style={{ backgroundColor: COLORS.background }}>
       {/* Header */}
-      <header className="border-b" style={{ backgroundColor: COLORS.surface, borderColor: COLORS.deepIndigo }}>
-        <div className="container mx-auto px-6">
+      <header className="border-b sticky top-0 z-50" style={{ backgroundColor: COLORS.surface, borderColor: COLORS.deepIndigo }}>
+        <div className="container mx-auto px-4 sm:px-6">
           {/* Main Title Row */}
-          <div className="flex items-center justify-between py-4">
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <BarChart3 className="h-8 w-8" style={{ color: COLORS.electricSky }} />
-                <h1 className="text-2xl font-bold" style={{ color: COLORS.sandstone }}>Teroxx Terminal</h1>
-                <span className="text-sm px-2 py-1 rounded" style={{ backgroundColor: COLORS.sunsetEmber, color: COLORS.white }}>
+          <div className="flex items-center justify-between py-3 sm:py-4">
+            <div className="flex items-center space-x-2 sm:space-x-4 min-w-0 flex-1">
+              <div className="flex items-center space-x-3 min-w-0">
+                <TeroxxLogo 
+                  height={28} 
+                  width={110}
+                  showText={false}
+                  color={COLORS.electricSky}
+                  className="sm:hidden flex-shrink-0"
+                />
+                <TeroxxLogo 
+                  height={32} 
+                  width={140}
+                  showText={true}
+                  color={COLORS.electricSky}
+                  className="hidden sm:block flex-shrink-0"
+                />
+                <span className="text-lg sm:text-2xl font-bold" style={{ color: COLORS.sandstone }}>Terminal</span>
+                <span className="hidden sm:inline text-xs sm:text-sm px-2 py-1 rounded flex-shrink-0" style={{ backgroundColor: COLORS.sunsetEmber, color: COLORS.white }}>
                   Prototype
                 </span>
               </div>
-              <div className="text-sm" style={{ color: COLORS.neutral }}>
+              <div className="hidden lg:block text-sm flex-shrink-0" style={{ color: COLORS.neutral }}>
                 Advanced Crypto Market Intelligence
               </div>
             </div>
             
-            <div className="flex items-center space-x-4">
-              <div className="text-sm" style={{ color: COLORS.neutral }}>
+            <div className="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
+              <div className="hidden sm:block text-xs sm:text-sm" style={{ color: COLORS.neutral }}>
                 <div className="flex items-center space-x-2">
-                  <Zap className="h-4 w-4" style={{ color: COLORS.electricSky }} />
+                  <Zap className="h-3 w-3 sm:h-4 sm:w-4" style={{ color: COLORS.electricSky }} />
                   <span>API: {rateLimitInfo.remaining}/30</span>
                 </div>
               </div>
               
-              <div className="text-sm" style={{ color: COLORS.neutral }}>
+              <div className="hidden md:block text-xs sm:text-sm" style={{ color: COLORS.neutral }}>
                 Last update: {data.lastUpdate ? formatTimeAgo(data.lastUpdate) : 'Never'}
               </div>
               
               <button
                 onClick={handleRefresh}
                 disabled={refreshing}
-                className="flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors"
+                className="flex items-center space-x-1 sm:space-x-2 px-2 sm:px-3 py-2 rounded-lg transition-colors focus-mobile"
                 style={{ 
                   backgroundColor: refreshing ? COLORS.deepIndigo : COLORS.electricSky,
                   color: COLORS.white
                 }}
+                aria-label="Refresh data"
               >
                 <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-                <span>Refresh</span>
+                <span className="hidden sm:inline">Refresh</span>
               </button>
             </div>
           </div>
           
           {/* Navigation Tabs Row */}
           <div className="border-t" style={{ borderColor: COLORS.deepIndigo }}>
-            <nav className="flex space-x-1 py-3 overflow-x-auto">
+            <nav className="flex space-x-1 py-2 overflow-x-auto hide-scrollbar">
               <button 
                 onClick={() => setActiveTab('overview')}
-                className="px-6 py-3 rounded-t-lg font-medium border-b-2 text-sm whitespace-nowrap flex-shrink-0 transition-all"
+                className="px-3 sm:px-6 py-2 sm:py-3 rounded-t-lg font-medium border-b-2 text-xs sm:text-sm whitespace-nowrap flex-shrink-0 transition-all focus-mobile"
                 style={{ 
                   backgroundColor: activeTab === 'overview' ? COLORS.electricSky + '20' : 'transparent', 
                   color: activeTab === 'overview' ? COLORS.electricSky : COLORS.neutral,
                   borderColor: activeTab === 'overview' ? COLORS.electricSky : 'transparent'
                 }}
               >
-                <div className="flex items-center space-x-2">
-                  <BarChart3 className="h-4 w-4" />
-                  <span>Dashboard Overview</span>
+                <div className="flex items-center space-x-1 sm:space-x-2">
+                  <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span>Dashboard</span>
                 </div>
               </button>
               
               <button 
                 onClick={() => setActiveTab('analysis')}
-                className="px-6 py-3 rounded-t-lg font-medium text-sm transition-all hover:scale-105 border-b-2 flex-shrink-0 whitespace-nowrap"
+                className="px-3 sm:px-6 py-2 sm:py-3 rounded-t-lg font-medium text-xs sm:text-sm transition-all border-b-2 flex-shrink-0 whitespace-nowrap focus-mobile"
                 style={{ 
                   backgroundColor: activeTab === 'analysis' ? COLORS.sunsetEmber : COLORS.sunsetEmber + '60',
                   color: COLORS.white,
@@ -377,23 +394,23 @@ export default function CryptoDashboard() {
                   boxShadow: activeTab === 'analysis' ? `0 0 20px ${COLORS.sunsetEmber}40` : 'none'
                 }}
               >
-                <div className="flex items-center space-x-2">
-                  <Users className="h-4 w-4" />
-                  <Building2 className="h-4 w-4" />
-                  <span className="font-semibold">Retail vs Institutional Analysis - Details</span>
+                <div className="flex items-center space-x-1 sm:space-x-2">
+                  <Users className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <Building2 className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="font-semibold">Analysis Details</span>
                 </div>
               </button>
               
               <div 
-                className="px-6 py-3 rounded-t-lg font-medium text-sm opacity-50 cursor-not-allowed border-b-2 border-transparent flex-shrink-0 whitespace-nowrap"
+                className="px-3 sm:px-6 py-2 sm:py-3 rounded-t-lg font-medium text-xs sm:text-sm opacity-50 cursor-not-allowed border-b-2 border-transparent flex-shrink-0 whitespace-nowrap"
                 style={{ 
                   backgroundColor: COLORS.deepIndigo + '50',
                   color: COLORS.neutral
                 }}
                 title="Coming Soon"
               >
-                <div className="flex items-center space-x-2">
-                  <Activity className="h-4 w-4" />
+                <div className="flex items-center space-x-1 sm:space-x-2">
+                  <Activity className="h-3 w-3 sm:h-4 sm:w-4" />
                   <span>Market Analysis</span>
                 </div>
               </div>
@@ -431,7 +448,7 @@ export default function CryptoDashboard() {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-6 py-8">
+      <main className="container mx-auto px-4 sm:px-6 py-4 sm:py-8">
         {data.error && (
           <div className="mb-6 p-4 rounded-lg border" style={{ backgroundColor: `${COLORS.sunsetEmber}20`, borderColor: COLORS.sunsetEmber }}>
             <div className="flex items-center space-x-2">
@@ -484,13 +501,13 @@ function DashboardOverviewTab({ data, selectedCrypto, setSelectedCrypto }: {
 
       {/* Global Market Stats */}
       {data.globalStats && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="rounded-lg p-6" style={{ backgroundColor: COLORS.surface }}>
-            <div className="flex items-center space-x-2 mb-2">
-              <PieChart className="h-5 w-5" style={{ color: COLORS.electricSky }} />
-              <span className="text-sm" style={{ color: COLORS.neutral }}>Total Market Cap</span>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
+          <div className="rounded-lg p-3 sm:p-6" style={{ backgroundColor: COLORS.surface }}>
+            <div className="flex items-center space-x-1 sm:space-x-2 mb-1 sm:mb-2">
+              <PieChart className="h-4 w-4 sm:h-5 sm:w-5" style={{ color: COLORS.electricSky }} />
+              <span className="text-xs sm:text-sm" style={{ color: COLORS.neutral }}>Market Cap</span>
             </div>
-            <div className="text-2xl font-bold" style={{ color: COLORS.sandstone }}>
+            <div className="text-lg sm:text-2xl font-bold" style={{ color: COLORS.sandstone }}>
               ${data.globalStats.total_market_cap?.usd ? 
                 (data.globalStats.total_market_cap.usd / 1e12).toFixed(2) + 'T' : 
                 'N/A'
@@ -498,12 +515,12 @@ function DashboardOverviewTab({ data, selectedCrypto, setSelectedCrypto }: {
             </div>
           </div>
           
-          <div className="rounded-lg p-6" style={{ backgroundColor: COLORS.surface }}>
-            <div className="flex items-center space-x-2 mb-2">
-              <Activity className="h-5 w-5" style={{ color: COLORS.electricSky }} />
-              <span className="text-sm" style={{ color: COLORS.neutral }}>24h Volume</span>
+          <div className="rounded-lg p-3 sm:p-6" style={{ backgroundColor: COLORS.surface }}>
+            <div className="flex items-center space-x-1 sm:space-x-2 mb-1 sm:mb-2">
+              <Activity className="h-4 w-4 sm:h-5 sm:w-5" style={{ color: COLORS.electricSky }} />
+              <span className="text-xs sm:text-sm" style={{ color: COLORS.neutral }}>24h Volume</span>
             </div>
-            <div className="text-2xl font-bold" style={{ color: COLORS.sandstone }}>
+            <div className="text-lg sm:text-2xl font-bold" style={{ color: COLORS.sandstone }}>
               ${data.globalStats.total_volume?.usd ? 
                 (data.globalStats.total_volume.usd / 1e9).toFixed(0) + 'B' : 
                 'N/A'
@@ -511,22 +528,22 @@ function DashboardOverviewTab({ data, selectedCrypto, setSelectedCrypto }: {
             </div>
           </div>
           
-          <div className="rounded-lg p-6" style={{ backgroundColor: COLORS.surface }}>
-            <div className="flex items-center space-x-2 mb-2">
-              <TrendingUp className="h-5 w-5" style={{ color: COLORS.sunsetEmber }} />
-              <span className="text-sm" style={{ color: COLORS.neutral }}>BTC Dominance</span>
+          <div className="rounded-lg p-3 sm:p-6" style={{ backgroundColor: COLORS.surface }}>
+            <div className="flex items-center space-x-1 sm:space-x-2 mb-1 sm:mb-2">
+              <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5" style={{ color: COLORS.sunsetEmber }} />
+              <span className="text-xs sm:text-sm" style={{ color: COLORS.neutral }}>BTC Dom.</span>
             </div>
-            <div className="text-2xl font-bold" style={{ color: COLORS.sandstone }}>
+            <div className="text-lg sm:text-2xl font-bold" style={{ color: COLORS.sandstone }}>
               {data.globalStats.market_cap_percentage?.btc?.toFixed(1) || 'N/A'}%
             </div>
           </div>
           
-          <div className="rounded-lg p-6" style={{ backgroundColor: COLORS.surface }}>
-            <div className="flex items-center space-x-2 mb-2">
-              <Users className="h-5 w-5" style={{ color: COLORS.sunsetEmber }} />
-              <span className="text-sm" style={{ color: COLORS.neutral }}>Active Cryptos</span>
+          <div className="rounded-lg p-3 sm:p-6" style={{ backgroundColor: COLORS.surface }}>
+            <div className="flex items-center space-x-1 sm:space-x-2 mb-1 sm:mb-2">
+              <Users className="h-4 w-4 sm:h-5 sm:w-5" style={{ color: COLORS.sunsetEmber }} />
+              <span className="text-xs sm:text-sm" style={{ color: COLORS.neutral }}>Cryptos</span>
             </div>
-            <div className="text-2xl font-bold" style={{ color: COLORS.sandstone }}>
+            <div className="text-lg sm:text-2xl font-bold" style={{ color: COLORS.sandstone }}>
               {data.globalStats.active_cryptocurrencies?.toLocaleString() || 'N/A'}
             </div>
           </div>
@@ -539,29 +556,29 @@ function DashboardOverviewTab({ data, selectedCrypto, setSelectedCrypto }: {
 
 
       {/* Top Coins Display */}
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold mb-6">Top Cryptocurrencies</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div className="mb-6 sm:mb-8">
+        <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Top Cryptocurrencies</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
           {data.topCoins.slice(0, 12).map((coin: any, index: number) => (
-            <div key={coin.id || index} className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-              <div className="flex items-center space-x-3">
+            <div key={coin.id || index} className="bg-gray-800 p-3 sm:p-4 rounded-lg border border-gray-700 hover:border-gray-600 transition-colors">
+              <div className="flex items-center space-x-2 sm:space-x-3">
                 {coin.image && (
-                  <img src={coin.image} alt={coin.name} className="w-8 h-8 rounded-full" />
+                  <img src={coin.image} alt={coin.name} className="w-6 h-6 sm:w-8 sm:h-8 rounded-full flex-shrink-0" />
                 )}
-                <div>
-                  <h3 className="font-semibold">{coin.symbol?.toUpperCase()}</h3>
-                  <p className="text-gray-400 text-sm">{coin.name}</p>
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-semibold text-sm sm:text-base truncate">{coin.symbol?.toUpperCase()}</h3>
+                  <p className="text-gray-400 text-xs sm:text-sm truncate">{coin.name}</p>
                 </div>
               </div>
-              <div className="mt-3">
-                <div className="text-lg font-bold">
+              <div className="mt-2 sm:mt-3">
+                <div className="text-base sm:text-lg font-bold truncate">
                   ${coin.current_price?.toLocaleString() || 'N/A'}
                 </div>
-                <div className={`text-sm ${
+                <div className={`text-xs sm:text-sm flex items-center space-x-1 ${
                   coin.price_change_percentage_24h >= 0 ? 'text-green-400' : 'text-red-400'
                 }`}>
-                  {coin.price_change_percentage_24h >= 0 ? '↗' : '↘'} 
-                  {Math.abs(coin.price_change_percentage_24h || 0).toFixed(2)}%
+                  <span>{coin.price_change_percentage_24h >= 0 ? '↗' : '↘'}</span>
+                  <span>{Math.abs(coin.price_change_percentage_24h || 0).toFixed(2)}%</span>
                 </div>
               </div>
             </div>
