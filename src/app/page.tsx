@@ -16,7 +16,9 @@ import {
   Database,
   Clock,
   Target,
-  DollarSign
+  DollarSign,
+  ChevronDown,
+  LineChart
 } from 'lucide-react';
 
 // Re-enable API service
@@ -62,6 +64,7 @@ export default function CryptoDashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const [rateLimitInfo, setRateLimitInfo] = useState({ remaining: 30, resetTime: 0 });
   const [activeTab, setActiveTab] = useState<'overview' | 'analysis' | 'gainers-losers'>('overview');
+  const [marketDropdownOpen, setMarketDropdownOpen] = useState(false);
 
   const fetchDashboardData = async (isRefresh = false) => {
     try {
@@ -305,6 +308,20 @@ export default function CryptoDashboard() {
     };
   }, []);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (marketDropdownOpen) {
+        setMarketDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [marketDropdownOpen]);
+
   const handleRefresh = () => {
     fetchDashboardData(true);
   };
@@ -488,6 +505,55 @@ export default function CryptoDashboard() {
                 </div>
               </button>
               
+              {/* Market Dropdown */}
+              <div className="relative">
+                <button 
+                  onClick={() => setMarketDropdownOpen(!marketDropdownOpen)}
+                  className="px-3 sm:px-6 py-2 sm:py-3 rounded-t-lg font-medium border-b-2 text-xs sm:text-sm whitespace-nowrap flex-shrink-0 transition-all focus-mobile"
+                  style={{ 
+                    backgroundColor: activeTab === 'gainers-losers' ? COLORS.electricSky + '20' : 'transparent',
+                    color: activeTab === 'gainers-losers' ? COLORS.electricSky : COLORS.neutral,
+                    borderColor: activeTab === 'gainers-losers' ? COLORS.electricSky : 'transparent'
+                  }}
+                >
+                  <div className="flex items-center space-x-1 sm:space-x-2">
+                    <LineChart className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span>Market</span>
+                    <ChevronDown className={`h-3 w-3 sm:h-4 sm:w-4 transition-transform ${marketDropdownOpen ? 'rotate-180' : ''}`} />
+                  </div>
+                </button>
+                
+                {/* Dropdown Menu */}
+                {marketDropdownOpen && (
+                  <div 
+                    className="absolute top-full left-0 mt-1 py-2 w-48 rounded-lg shadow-lg border z-50"
+                    style={{ 
+                      backgroundColor: COLORS.surface,
+                      borderColor: COLORS.deepIndigo 
+                    }}
+                  >
+                                         <button
+                       onClick={() => {
+                         setActiveTab('gainers-losers');
+                         setMarketDropdownOpen(false);
+                       }}
+                       className="w-full px-4 py-2 text-left text-sm transition-colors"
+                       style={{ 
+                         color: COLORS.neutral
+                       }}
+                       onMouseEnter={(e) => e.currentTarget.style.backgroundColor = COLORS.electricSky + '20'}
+                       onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                     >
+                      <div className="flex items-center space-x-2">
+                        <TrendingUp className="h-4 w-4" />
+                        <TrendingDown className="h-4 w-4" />
+                        <span>Top 10 Gainers & Losers</span>
+                      </div>
+                    </button>
+                  </div>
+                )}
+              </div>
+              
               <button 
                 onClick={() => setActiveTab('analysis')}
                 className="px-3 sm:px-6 py-2 sm:py-3 rounded-t-lg font-medium text-xs sm:text-sm transition-all border-b-2 flex-shrink-0 whitespace-nowrap focus-mobile"
@@ -502,22 +568,6 @@ export default function CryptoDashboard() {
                   <Users className="h-3 w-3 sm:h-4 sm:w-4" />
                   <Building2 className="h-3 w-3 sm:h-4 sm:w-4" />
                   <span className="font-semibold">Analysis Details</span>
-                </div>
-              </button>
-              
-              <button 
-                onClick={() => setActiveTab('gainers-losers')}
-                className="px-3 sm:px-6 py-2 sm:py-3 rounded-t-lg font-medium text-xs sm:text-sm transition-all border-b-2 flex-shrink-0 whitespace-nowrap focus-mobile"
-                style={{ 
-                  backgroundColor: activeTab === 'gainers-losers' ? COLORS.electricSky + '20' : 'transparent',
-                  color: activeTab === 'gainers-losers' ? COLORS.electricSky : COLORS.neutral,
-                  borderColor: activeTab === 'gainers-losers' ? COLORS.electricSky : 'transparent'
-                }}
-              >
-                <div className="flex items-center space-x-1 sm:space-x-2">
-                  <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span>Top 10 G&L</span>
                 </div>
               </button>
               
