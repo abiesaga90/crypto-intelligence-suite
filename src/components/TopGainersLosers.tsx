@@ -36,24 +36,44 @@ const TopGainersLosers: React.FC = () => {
       setLoading(true);
       setError(null);
       
+      console.log('Fetching top gainers and losers...');
       const result = await apiService.getTopGainersAndLosers(10);
+      console.log('API result:', result);
       
-      setData(result);
-      
-      // Determine API source
-      if (result.gainers.length > 0) {
-        setApiSource(result.gainers[0].source || 'Unknown');
+      // Ensure the result has the expected structure
+      if (result && typeof result === 'object') {
+        const gainers = Array.isArray(result.gainers) ? result.gainers : [];
+        const losers = Array.isArray(result.losers) ? result.losers : [];
+        
+        setData({ gainers, losers });
+        
+        // Determine API source
+        if (gainers.length > 0 && gainers[0].source) {
+          setApiSource(gainers[0].source);
+        } else {
+          setApiSource('Unknown');
+        }
+      } else {
+        throw new Error('Invalid API response format');
       }
       
     } catch (err) {
       console.error('Error fetching gainers/losers:', err);
-      setError('Failed to fetch market data');
+      setError(err instanceof Error ? err.message : 'Failed to fetch market data');
+      
+      // Set fallback data on error
+      setData({ gainers: [], losers: [] });
+      setApiSource('Error');
     } finally {
       setLoading(false);
     }
   };
 
-  const formatPrice = (price: number): string => {
+  const formatPrice = (price: number | null | undefined): string => {
+    if (typeof price !== 'number' || isNaN(price)) {
+      return '$0.00';
+    }
+    
     if (price < 0.01) {
       return `$${price.toFixed(6)}`;
     } else if (price < 1) {
@@ -65,99 +85,114 @@ const TopGainersLosers: React.FC = () => {
     }
   };
 
-  const formatPercentage = (percentage: number): string => {
+  const formatPercentage = (percentage: number | null | undefined): string => {
+    if (typeof percentage !== 'number' || isNaN(percentage)) {
+      return '0.00%';
+    }
     return `${percentage > 0 ? '+' : ''}${percentage.toFixed(2)}%`;
   };
 
-  const CoinListItem: React.FC<{ coin: Coin; rank: number; type: 'gainer' | 'loser' }> = ({ coin, rank, type }) => (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, delay: rank * 0.02 }}
-      className="flex items-center justify-between py-3 px-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors border-b border-gray-100 dark:border-gray-800 last:border-b-0"
-    >
-      {/* Left side: Rank and Coin Info */}
-      <div className="flex items-center space-x-3 flex-1 min-w-0">
-        <div className="flex-shrink-0 w-6 text-center">
-          <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
-            {rank}
-          </span>
-        </div>
-        
-        <div className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
-          <span className="text-xs font-bold text-gray-600 dark:text-gray-300">
-            {coin.symbol.charAt(0)}
-          </span>
-        </div>
-        
-        <div className="min-w-0 flex-1">
-          <div className="font-medium text-gray-900 dark:text-white text-sm truncate">
-            {coin.name}
-          </div>
-          <div className="text-xs text-gray-500 dark:text-gray-400 uppercase">
-            {coin.symbol}
-          </div>
-        </div>
-      </div>
+  const CoinListItem: React.FC<{ coin: Coin; rank: number; type: 'gainer' | 'loser' }> = ({ coin, rank, type }) => {
+    // Safety checks for coin data
+    if (!coin || !coin.symbol || !coin.name) {
+      return null;
+    }
 
-      {/* Right side: Price and Change */}
-      <div className="flex flex-col items-end space-y-1 flex-shrink-0">
-        <span className="text-sm font-medium text-gray-900 dark:text-white">
-          {formatPrice(coin.current_price)}
-        </span>
-        <span
-          className={`text-xs font-medium px-2 py-1 rounded ${
-            type === 'gainer'
-              ? 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20'
-              : 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20'
-          }`}
-        >
-          {formatPercentage(coin.price_change_percentage_24h)}
-        </span>
-      </div>
-    </motion.div>
-  );
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: rank * 0.02 }}
+        className="flex items-center justify-between py-3 px-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors border-b border-gray-100 dark:border-gray-800 last:border-b-0"
+      >
+        {/* Left side: Rank and Coin Info */}
+        <div className="flex items-center space-x-3 flex-1 min-w-0">
+          <div className="flex-shrink-0 w-6 text-center">
+            <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+              {rank}
+            </span>
+          </div>
+          
+          <div className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
+            <span className="text-xs font-bold text-gray-600 dark:text-gray-300">
+              {coin.symbol ? coin.symbol.charAt(0).toUpperCase() : '?'}
+            </span>
+          </div>
+          
+          <div className="min-w-0 flex-1">
+            <div className="font-medium text-gray-900 dark:text-white text-sm truncate">
+              {coin.name || 'Unknown'}
+            </div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 uppercase">
+              {coin.symbol || 'N/A'}
+            </div>
+          </div>
+        </div>
+
+        {/* Right side: Price and Change */}
+        <div className="flex flex-col items-end space-y-1 flex-shrink-0">
+          <span className="text-sm font-medium text-gray-900 dark:text-white">
+            {formatPrice(coin.current_price)}
+          </span>
+          <span
+            className={`text-xs font-medium px-2 py-1 rounded ${
+              type === 'gainer'
+                ? 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20'
+                : 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20'
+            }`}
+          >
+            {formatPercentage(coin.price_change_percentage_24h)}
+          </span>
+        </div>
+      </motion.div>
+    );
+  };
 
   const ListSection: React.FC<{ title: string; coins: Coin[]; type: 'gainer' | 'loser'; color: string }> = ({ 
     title, 
     coins, 
     type, 
     color 
-  }) => (
-    <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg overflow-hidden">
-      {/* Header */}
-      <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-        <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center space-x-2">
-          <div className={`w-3 h-3 rounded-full ${color}`}></div>
-          <span>{title}</span>
-          <span className="text-sm font-normal text-gray-500 dark:text-gray-400">
-            ({coins.length})
-          </span>
-        </h3>
-      </div>
+  }) => {
+    // Safety check for coins array
+    const validCoins = Array.isArray(coins) ? coins.filter(coin => coin && coin.id) : [];
 
-      {/* List */}
-      <div className="max-h-[400px] overflow-y-auto">
-        {coins.length > 0 ? (
-          coins.map((coin, index) => (
-            <CoinListItem
-              key={coin.id}
-              coin={coin}
-              rank={index + 1}
-              type={type}
-            />
-          ))
-        ) : (
-          <div className="py-8 text-center">
-            <div className="text-gray-400 text-2xl mb-2">📊</div>
-            <p className="text-gray-600 dark:text-gray-400 text-sm">
-              No {type === 'gainer' ? 'gainers' : 'losers'} data available
-            </p>
-          </div>
-        )}
+    return (
+      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg overflow-hidden">
+        {/* Header */}
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center space-x-2">
+            <div className={`w-3 h-3 rounded-full ${color}`}></div>
+            <span>{title}</span>
+            <span className="text-sm font-normal text-gray-500 dark:text-gray-400">
+              ({validCoins.length})
+            </span>
+          </h3>
+        </div>
+
+        {/* List */}
+        <div className="max-h-[400px] overflow-y-auto">
+          {validCoins.length > 0 ? (
+            validCoins.map((coin, index) => (
+              <CoinListItem
+                key={coin.id || `${type}-${index}`}
+                coin={coin}
+                rank={index + 1}
+                type={type}
+              />
+            ))
+          ) : (
+            <div className="py-8 text-center">
+              <div className="text-gray-400 text-2xl mb-2">📊</div>
+              <p className="text-gray-600 dark:text-gray-400 text-sm">
+                No {type === 'gainer' ? 'gainers' : 'losers'} data available
+              </p>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   if (loading) {
     return (
@@ -170,12 +205,12 @@ const TopGainersLosers: React.FC = () => {
         
         {/* Lists Skeleton */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {[...Array(2)].map((_, i) => (
+          {[1, 2].map((i) => (
             <div key={i} className="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-6">
               <div className="animate-pulse">
                 <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-4"></div>
                 <div className="space-y-3">
-                  {[...Array(10)].map((_, j) => (
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((j) => (
                     <div key={j} className="flex items-center justify-between">
                       <div className="flex items-center space-x-3 flex-1">
                         <div className="w-4 h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
@@ -204,7 +239,7 @@ const TopGainersLosers: React.FC = () => {
     return (
       <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-6">
         <div className="text-center">
-          <div className="text-red-500 mb-2">⚠️</div>
+          <div className="text-red-500 mb-2 text-4xl">⚠️</div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
             Data Unavailable
           </h3>
@@ -232,7 +267,7 @@ const TopGainersLosers: React.FC = () => {
             Real-time market performance • 24-hour change
           </p>
         </div>
-        {apiSource && (
+        {apiSource && apiSource !== 'Error' && (
           <span className="text-xs text-gray-500 dark:text-gray-400 px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded mt-2 lg:mt-0">
             Data: {apiSource}
           </span>
@@ -244,7 +279,7 @@ const TopGainersLosers: React.FC = () => {
         {/* Top Gainers */}
         <ListSection
           title="Top 10 Gainers"
-          coins={data.gainers}
+          coins={data.gainers || []}
           type="gainer"
           color="bg-green-500"
         />
@@ -252,7 +287,7 @@ const TopGainersLosers: React.FC = () => {
         {/* Top Losers */}
         <ListSection
           title="Top 10 Losers"
-          coins={data.losers}
+          coins={data.losers || []}
           type="loser"
           color="bg-red-500"
         />
