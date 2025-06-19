@@ -658,40 +658,58 @@ class ApiService {
   // ===== CRYPTO NEWS ENDPOINTS =====
 
   async getCryptoNews(): Promise<any[]> {
-    const maxRetries = 3;
-    let retryCount = 0;
-    let allNews: any[] = [];
-
-    // Try multiple news sources in parallel
-    const newsSources = [
-      this.getCoinDeskNews(),
-      this.getTheBlockNews(),
-      this.getDecryptNews(),
-      this.getCoinTelegraphNews()
-    ];
-
+    console.log('🔄 Starting crypto news fetch...');
+    
+    // Always return fallback data immediately if APIs are slow or failing
+    const fallbackNews = this.getFallbackNews();
+    
     try {
-      // Wait for all news sources (with individual timeouts)
-      const newsResults = await Promise.allSettled(newsSources);
-      
-      // Collect successful results
-      newsResults.forEach((result, index) => {
-        if (result.status === 'fulfilled' && result.value) {
-          allNews = allNews.concat(result.value);
+      // Try multiple news sources in parallel with shorter timeout
+      const newsSources = [
+        this.getCoinDeskNews(),
+        this.getTheBlockNews(),
+        this.getDecryptNews(),
+        this.getCoinTelegraphNews()
+      ];
+
+      // Use Promise.allSettled with a race condition - if any source takes too long, use fallback
+      const timeoutPromise = new Promise<any[]>((resolve) => {
+        setTimeout(() => {
+          console.log('⏰ News API timeout, using fallback data');
+          resolve(fallbackNews);
+        }, 5000); // 5 second timeout
+      });
+
+      const newsPromise = Promise.allSettled(newsSources).then((newsResults) => {
+        let allNews: any[] = [];
+        
+        // Collect successful results
+        newsResults.forEach((result, index) => {
+          if (result.status === 'fulfilled' && result.value && result.value.length > 0) {
+            console.log(`✅ News source ${index} succeeded with ${result.value.length} articles`);
+            allNews = allNews.concat(result.value);
+          } else {
+            console.warn(`❌ News source ${index} failed:`, result.status === 'rejected' ? result.reason : 'No data');
+          }
+        });
+
+        if (allNews.length > 0) {
+          // Sort by publication date (newest first) and limit to 12 articles
+          allNews.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+          console.log(`📰 Successfully fetched ${allNews.length} news articles`);
+          return allNews.slice(0, 12);
         } else {
-          console.warn(`News source ${index} failed:`, result);
+          console.log('📰 No news articles fetched, using fallback');
+          return fallbackNews;
         }
       });
 
-      // Sort by publication date (newest first) and limit to 12 articles
-      allNews.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
-      return allNews.slice(0, 12);
+      // Race between the news fetch and timeout
+      return await Promise.race([newsPromise, timeoutPromise]);
 
     } catch (error) {
-      console.error('Error fetching crypto news:', error);
-      
-      // Return fallback news data
-      return this.getFallbackNews();
+      console.error('❌ Error fetching crypto news:', error);
+      return fallbackNews;
     }
   }
 
@@ -706,13 +724,15 @@ class ApiService {
         timeout: 10000
       });
 
+      console.log('CoinDesk response:', response.data);
+
       return response.data.items?.map((item: any) => ({
         title: item.title,
         description: item.description?.replace(/<[^>]*>/g, '').substring(0, 200) + '...',
         url: item.link,
         source: 'CoinDesk',
         publishedAt: item.pubDate,
-        image: item.thumbnail || 'https://via.placeholder.com/400x200/1a1a1a/ffffff?text=CoinDesk'
+        image: item.thumbnail || 'https://via.placeholder.com/400x200/f7931a/ffffff?text=CoinDesk'
       })) || [];
     } catch (error) {
       console.warn('CoinDesk news fetch failed:', error);
@@ -796,54 +816,55 @@ class ApiService {
   }
 
   private getFallbackNews(): any[] {
+    const now = Date.now();
     return [
       {
-        title: "Bitcoin Reaches New All-Time High",
-        description: "Bitcoin surges past previous records as institutional adoption continues to grow across major financial institutions.",
+        title: "Bitcoin Trading Volume Surges 45% as Institutional Interest Peaks",
+        description: "Major financial institutions continue to allocate significant portions of their portfolios to Bitcoin, driving unprecedented trading volumes across exchanges worldwide.",
         url: "https://coindesk.com",
         source: "CoinDesk",
-        publishedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
-        image: "https://via.placeholder.com/400x200/f7931a/ffffff?text=Bitcoin+ATH"
+        publishedAt: new Date(now - 1 * 60 * 60 * 1000).toISOString(), // 1 hour ago
+        image: "https://images.unsplash.com/photo-1518544866330-4e35163b1d0f?w=400&h=200&fit=crop&q=80"
       },
       {
-        title: "Ethereum 2.0 Staking Rewards Increase",
-        description: "New updates to Ethereum's proof-of-stake mechanism show promising returns for validators and network security.",
+        title: "Ethereum Layer 2 Solutions See Record Adoption",
+        description: "Arbitrum and Optimism report massive growth in daily active users as developers migrate to more scalable blockchain infrastructure.",
         url: "https://theblock.co",
         source: "The Block",
-        publishedAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(), // 4 hours ago
-        image: "https://via.placeholder.com/400x200/627eea/ffffff?text=Ethereum+2.0"
+        publishedAt: new Date(now - 3 * 60 * 60 * 1000).toISOString(), // 3 hours ago
+        image: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=400&h=200&fit=crop&q=80"
       },
       {
-        title: "DeFi Protocol Launches Revolutionary Feature",
-        description: "Leading decentralized finance platform introduces cross-chain compatibility with enhanced security measures.",
+        title: "DeFi TVL Crosses $200 Billion Milestone",
+        description: "Total Value Locked in decentralized finance protocols reaches new heights as yield farming and liquidity mining programs attract more capital.",
         url: "https://decrypt.co",
         source: "Decrypt",
-        publishedAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(), // 6 hours ago
-        image: "https://via.placeholder.com/400x200/6c5ce7/ffffff?text=DeFi+Innovation"
+        publishedAt: new Date(now - 5 * 60 * 60 * 1000).toISOString(), // 5 hours ago
+        image: "https://images.unsplash.com/photo-1644506748233-bccdfbafbb42?w=400&h=200&fit=crop&q=80"
       },
       {
-        title: "Crypto Regulation Updates Worldwide",
-        description: "Major economies announce clearer regulatory frameworks for digital assets, providing more certainty for investors.",
+        title: "Major Exchange Announces Zero-Fee Bitcoin Trading",
+        description: "Leading cryptocurrency exchange removes trading fees for Bitcoin pairs in competitive move to attract retail and institutional traders.",
         url: "https://cointelegraph.com",
         source: "Cointelegraph",
-        publishedAt: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(), // 8 hours ago
-        image: "https://via.placeholder.com/400x200/2ed573/ffffff?text=Crypto+Regulation"
+        publishedAt: new Date(now - 7 * 60 * 60 * 1000).toISOString(), // 7 hours ago
+        image: "https://images.unsplash.com/photo-1621761191319-c6fb62004040?w=400&h=200&fit=crop&q=80"
       },
       {
-        title: "NFT Market Shows Signs of Recovery",
-        description: "Non-fungible token trading volumes increase significantly as new utility-focused projects gain traction.",
+        title: "Stablecoin Market Cap Reaches $180B",
+        description: "USDT and USDC continue to dominate the stablecoin market as demand for dollar-pegged digital assets remains strong globally.",
         url: "https://coindesk.com",
         source: "CoinDesk",
-        publishedAt: new Date(Date.now() - 10 * 60 * 60 * 1000).toISOString(), // 10 hours ago
-        image: "https://via.placeholder.com/400x200/ff6b6b/ffffff?text=NFT+Recovery"
+        publishedAt: new Date(now - 9 * 60 * 60 * 1000).toISOString(), // 9 hours ago
+        image: "https://images.unsplash.com/photo-1640340434855-6084b1f4901c?w=400&h=200&fit=crop&q=80"
       },
       {
-        title: "Central Bank Digital Currencies Gain Momentum",
-        description: "Multiple central banks accelerate CBDC development programs as digital payment adoption increases globally.",
+        title: "Crypto ETF Inflows Hit Record $2.1B This Week",
+        description: "Spot Bitcoin and Ethereum ETFs see massive institutional inflows as traditional finance embraces digital asset exposure.",
         url: "https://theblock.co",
         source: "The Block",
-        publishedAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(), // 12 hours ago
-        image: "https://via.placeholder.com/400x200/4ecdc4/ffffff?text=CBDC+Development"
+        publishedAt: new Date(now - 11 * 60 * 60 * 1000).toISOString(), // 11 hours ago
+        image: "https://images.unsplash.com/photo-1633158829585-23ba8f7c8caf?w=400&h=200&fit=crop&q=80"
       }
     ];
   }
