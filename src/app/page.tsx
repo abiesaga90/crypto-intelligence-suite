@@ -33,6 +33,9 @@ import RetailVsInstitutionalChart from '@/components/RetailVsInstitutionalChart'
 // Import Teroxx Logo
 import TeroxxLogo from '@/components/TeroxxLogo';
 
+// Import Top Gainers & Losers component
+import TopGainersLosers from '@/components/TopGainersLosers';
+
 interface DashboardData {
   marketOverview: any;
   topCoins: any[];
@@ -58,7 +61,7 @@ export default function CryptoDashboard() {
   const [selectedCrypto, setSelectedCrypto] = useState<string>('BTC');
   const [refreshing, setRefreshing] = useState(false);
   const [rateLimitInfo, setRateLimitInfo] = useState({ remaining: 30, resetTime: 0 });
-  const [activeTab, setActiveTab] = useState<'overview' | 'analysis'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'analysis' | 'gainers-losers'>('overview');
 
   const fetchDashboardData = async (isRefresh = false) => {
     try {
@@ -456,19 +459,21 @@ export default function CryptoDashboard() {
                 </div>
               </button>
               
-              <div 
-                className="px-3 sm:px-6 py-2 sm:py-3 rounded-t-lg font-medium text-xs sm:text-sm opacity-50 cursor-not-allowed border-b-2 border-transparent flex-shrink-0 whitespace-nowrap"
+              <button 
+                onClick={() => setActiveTab('gainers-losers')}
+                className="px-3 sm:px-6 py-2 sm:py-3 rounded-t-lg font-medium text-xs sm:text-sm transition-all border-b-2 flex-shrink-0 whitespace-nowrap focus-mobile"
                 style={{ 
-                  backgroundColor: COLORS.deepIndigo + '50',
-                  color: COLORS.neutral
+                  backgroundColor: activeTab === 'gainers-losers' ? COLORS.electricSky + '20' : 'transparent',
+                  color: activeTab === 'gainers-losers' ? COLORS.electricSky : COLORS.neutral,
+                  borderColor: activeTab === 'gainers-losers' ? COLORS.electricSky : 'transparent'
                 }}
-                title="Coming Soon"
               >
                 <div className="flex items-center space-x-1 sm:space-x-2">
-                  <Activity className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span>Market Analysis</span>
+                  <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span>Top 100 G&L</span>
                 </div>
-              </div>
+              </button>
               
               <div 
                 className="px-6 py-3 rounded-t-lg font-medium text-sm opacity-50 cursor-not-allowed border-b-2 border-transparent flex-shrink-0 whitespace-nowrap"
@@ -528,6 +533,10 @@ export default function CryptoDashboard() {
             selectedCrypto={selectedCrypto}
             setSelectedCrypto={setSelectedCrypto}
           />
+        )}
+        
+        {activeTab === 'gainers-losers' && (
+          <TopGainersLosers />
         )}
       </main>
 
