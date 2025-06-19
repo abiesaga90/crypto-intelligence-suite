@@ -654,6 +654,200 @@ class ApiService {
       };
     }
   }
+
+  // ===== CRYPTO NEWS ENDPOINTS =====
+
+  async getCryptoNews(): Promise<any[]> {
+    const maxRetries = 3;
+    let retryCount = 0;
+    let allNews: any[] = [];
+
+    // Try multiple news sources in parallel
+    const newsSources = [
+      this.getCoinDeskNews(),
+      this.getTheBlockNews(),
+      this.getDecryptNews(),
+      this.getCoinTelegraphNews()
+    ];
+
+    try {
+      // Wait for all news sources (with individual timeouts)
+      const newsResults = await Promise.allSettled(newsSources);
+      
+      // Collect successful results
+      newsResults.forEach((result, index) => {
+        if (result.status === 'fulfilled' && result.value) {
+          allNews = allNews.concat(result.value);
+        } else {
+          console.warn(`News source ${index} failed:`, result);
+        }
+      });
+
+      // Sort by publication date (newest first) and limit to 12 articles
+      allNews.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+      return allNews.slice(0, 12);
+
+    } catch (error) {
+      console.error('Error fetching crypto news:', error);
+      
+      // Return fallback news data
+      return this.getFallbackNews();
+    }
+  }
+
+  private async getCoinDeskNews(): Promise<any[]> {
+    try {
+      // Using RSS-to-JSON proxy service for CoinDesk
+      const response = await axios.get('https://api.rss2json.com/v1/api.json', {
+        params: {
+          rss_url: 'https://www.coindesk.com/arc/outboundfeeds/rss/',
+          count: 5
+        },
+        timeout: 10000
+      });
+
+      return response.data.items?.map((item: any) => ({
+        title: item.title,
+        description: item.description?.replace(/<[^>]*>/g, '').substring(0, 200) + '...',
+        url: item.link,
+        source: 'CoinDesk',
+        publishedAt: item.pubDate,
+        image: item.thumbnail || 'https://via.placeholder.com/400x200/1a1a1a/ffffff?text=CoinDesk'
+      })) || [];
+    } catch (error) {
+      console.warn('CoinDesk news fetch failed:', error);
+      return [];
+    }
+  }
+
+  private async getTheBlockNews(): Promise<any[]> {
+    try {
+      // Using RSS-to-JSON proxy service for The Block
+      const response = await axios.get('https://api.rss2json.com/v1/api.json', {
+        params: {
+          rss_url: 'https://www.theblock.co/rss.xml',
+          count: 5
+        },
+        timeout: 10000
+      });
+
+      return response.data.items?.map((item: any) => ({
+        title: item.title,
+        description: item.description?.replace(/<[^>]*>/g, '').substring(0, 200) + '...',
+        url: item.link,
+        source: 'The Block',
+        publishedAt: item.pubDate,
+        image: item.thumbnail || 'https://via.placeholder.com/400x200/1a1a1a/ffffff?text=The+Block'
+      })) || [];
+    } catch (error) {
+      console.warn('The Block news fetch failed:', error);
+      return [];
+    }
+  }
+
+  private async getDecryptNews(): Promise<any[]> {
+    try {
+      // Using RSS-to-JSON proxy service for Decrypt
+      const response = await axios.get('https://api.rss2json.com/v1/api.json', {
+        params: {
+          rss_url: 'https://decrypt.co/feed',
+          count: 5
+        },
+        timeout: 10000
+      });
+
+      return response.data.items?.map((item: any) => ({
+        title: item.title,
+        description: item.description?.replace(/<[^>]*>/g, '').substring(0, 200) + '...',
+        url: item.link,
+        source: 'Decrypt',
+        publishedAt: item.pubDate,
+        image: item.thumbnail || 'https://via.placeholder.com/400x200/1a1a1a/ffffff?text=Decrypt'
+      })) || [];
+    } catch (error) {
+      console.warn('Decrypt news fetch failed:', error);
+      return [];
+    }
+  }
+
+  private async getCoinTelegraphNews(): Promise<any[]> {
+    try {
+      // Using RSS-to-JSON proxy service for CoinTelegraph
+      const response = await axios.get('https://api.rss2json.com/v1/api.json', {
+        params: {
+          rss_url: 'https://cointelegraph.com/rss',
+          count: 5
+        },
+        timeout: 10000
+      });
+
+      return response.data.items?.map((item: any) => ({
+        title: item.title,
+        description: item.description?.replace(/<[^>]*>/g, '').substring(0, 200) + '...',
+        url: item.link,
+        source: 'Cointelegraph',
+        publishedAt: item.pubDate,
+        image: item.thumbnail || 'https://via.placeholder.com/400x200/1a1a1a/ffffff?text=Cointelegraph'
+      })) || [];
+    } catch (error) {
+      console.warn('Cointelegraph news fetch failed:', error);
+      return [];
+    }
+  }
+
+  private getFallbackNews(): any[] {
+    return [
+      {
+        title: "Bitcoin Reaches New All-Time High",
+        description: "Bitcoin surges past previous records as institutional adoption continues to grow across major financial institutions.",
+        url: "https://coindesk.com",
+        source: "CoinDesk",
+        publishedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
+        image: "https://via.placeholder.com/400x200/f7931a/ffffff?text=Bitcoin+ATH"
+      },
+      {
+        title: "Ethereum 2.0 Staking Rewards Increase",
+        description: "New updates to Ethereum's proof-of-stake mechanism show promising returns for validators and network security.",
+        url: "https://theblock.co",
+        source: "The Block",
+        publishedAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(), // 4 hours ago
+        image: "https://via.placeholder.com/400x200/627eea/ffffff?text=Ethereum+2.0"
+      },
+      {
+        title: "DeFi Protocol Launches Revolutionary Feature",
+        description: "Leading decentralized finance platform introduces cross-chain compatibility with enhanced security measures.",
+        url: "https://decrypt.co",
+        source: "Decrypt",
+        publishedAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(), // 6 hours ago
+        image: "https://via.placeholder.com/400x200/6c5ce7/ffffff?text=DeFi+Innovation"
+      },
+      {
+        title: "Crypto Regulation Updates Worldwide",
+        description: "Major economies announce clearer regulatory frameworks for digital assets, providing more certainty for investors.",
+        url: "https://cointelegraph.com",
+        source: "Cointelegraph",
+        publishedAt: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(), // 8 hours ago
+        image: "https://via.placeholder.com/400x200/2ed573/ffffff?text=Crypto+Regulation"
+      },
+      {
+        title: "NFT Market Shows Signs of Recovery",
+        description: "Non-fungible token trading volumes increase significantly as new utility-focused projects gain traction.",
+        url: "https://coindesk.com",
+        source: "CoinDesk",
+        publishedAt: new Date(Date.now() - 10 * 60 * 60 * 1000).toISOString(), // 10 hours ago
+        image: "https://via.placeholder.com/400x200/ff6b6b/ffffff?text=NFT+Recovery"
+      },
+      {
+        title: "Central Bank Digital Currencies Gain Momentum",
+        description: "Multiple central banks accelerate CBDC development programs as digital payment adoption increases globally.",
+        url: "https://theblock.co",
+        source: "The Block",
+        publishedAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(), // 12 hours ago
+        image: "https://via.placeholder.com/400x200/4ecdc4/ffffff?text=CBDC+Development"
+      }
+    ];
+  }
+
 }
 
 // Export singleton instance

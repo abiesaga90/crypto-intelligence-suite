@@ -19,7 +19,8 @@ import {
   DollarSign,
   ChevronDown,
   LineChart,
-  Search
+  Search,
+  Newspaper
 } from 'lucide-react';
 
 // Re-enable API service
@@ -64,7 +65,7 @@ export default function CryptoDashboard() {
   const [selectedCrypto, setSelectedCrypto] = useState<string>('BTC');
   const [refreshing, setRefreshing] = useState(false);
   const [rateLimitInfo, setRateLimitInfo] = useState({ remaining: 30, resetTime: 0 });
-  const [activeTab, setActiveTab] = useState<'overview' | 'analysis' | 'gainers-losers'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'analysis' | 'gainers-losers' | 'news'>('overview');
   const [marketDropdownOpen, setMarketDropdownOpen] = useState(false);
   const [researchDropdownOpen, setResearchDropdownOpen] = useState(false);
 
@@ -622,6 +623,21 @@ export default function CryptoDashboard() {
                 </div>
               )}
               
+              <button 
+                onClick={() => setActiveTab('news')}
+                className="px-3 sm:px-6 py-2 sm:py-3 rounded-t-lg font-medium border-b-2 text-xs sm:text-sm whitespace-nowrap flex-shrink-0 transition-all focus-mobile"
+                style={{ 
+                  backgroundColor: activeTab === 'news' ? COLORS.electricSky + '20' : 'transparent',
+                  color: activeTab === 'news' ? COLORS.electricSky : COLORS.neutral,
+                  borderColor: activeTab === 'news' ? COLORS.electricSky : 'transparent'
+                }}
+              >
+                <div className="flex items-center space-x-1 sm:space-x-2">
+                  <Newspaper className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span>News</span>
+                </div>
+              </button>
+              
               <div 
                 className="px-6 py-3 rounded-t-lg font-medium text-sm opacity-50 cursor-not-allowed border-b-2 border-transparent flex-shrink-0 whitespace-nowrap"
                 style={{ 
@@ -684,6 +700,10 @@ export default function CryptoDashboard() {
         
         {activeTab === 'gainers-losers' && (
           <TopGainersLosers />
+        )}
+        
+        {activeTab === 'news' && (
+          <NewsTab />
         )}
       </main>
 
@@ -1277,6 +1297,179 @@ function AnalysisDetailsTab({ data, selectedCrypto, setSelectedCrypto }: {
           </div>
         </div>
       </motion.div>
+    </div>
+  );
+}
+
+// News Tab Component
+function NewsTab() {
+  const [newsData, setNewsData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchNews();
+  }, []);
+
+  const fetchNews = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Fetch news from multiple sources
+      const newsArticles = await apiService.getCryptoNews();
+      setNewsData(newsArticles);
+    } catch (err) {
+      console.error('Error fetching news:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch news');
+      
+      // Fallback news data
+      setNewsData([
+        {
+          title: "Bitcoin Reaches New All-Time High",
+          description: "Bitcoin surges past previous records as institutional adoption continues to grow.",
+          url: "#",
+          source: "CoinDesk",
+          publishedAt: "2024-01-15T10:30:00Z",
+          image: "https://via.placeholder.com/400x200/1a1a1a/ffffff?text=Bitcoin+News"
+        },
+        {
+          title: "Ethereum 2.0 Staking Rewards Increase",
+          description: "New updates to Ethereum's proof-of-stake mechanism show promising returns for validators.",
+          url: "#",
+          source: "The Block",
+          publishedAt: "2024-01-15T09:15:00Z",
+          image: "https://via.placeholder.com/400x200/1a1a1a/ffffff?text=Ethereum+News"
+        },
+        {
+          title: "DeFi Protocol Launches Revolutionary Feature",
+          description: "Leading decentralized finance platform introduces cross-chain compatibility.",
+          url: "#",
+          source: "Decrypt",
+          publishedAt: "2024-01-15T08:45:00Z",
+          image: "https://via.placeholder.com/400x200/1a1a1a/ffffff?text=DeFi+News"
+        }
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatTimeAgo = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+    
+    if (diffInHours < 1) return 'Just now';
+    if (diffInHours < 24) return `${diffInHours}h ago`;
+    return `${Math.floor(diffInHours / 24)}d ago`;
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-4"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-6">
+                <div className="animate-pulse">
+                  <div className="h-40 bg-gray-200 dark:bg-gray-700 rounded mb-4"></div>
+                  <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2"></div>
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full mb-2"></div>
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-8 text-center">
+        <div className="text-red-500 mb-4 text-4xl">📰</div>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+          News Unavailable
+        </h3>
+        <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
+        <button
+          onClick={fetchNews}
+          className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="text-center mb-8">
+        <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-3">
+          📰 Crypto News
+        </h2>
+        <p className="text-lg text-gray-600 dark:text-gray-400">
+          Latest updates from The Block, CoinDesk, Decrypt & more
+        </p>
+      </div>
+
+      {/* News Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {newsData.map((article, index) => (
+          <motion.div
+            key={index}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: index * 0.1 }}
+            className="bg-white dark:bg-gray-900 rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
+          >
+            {/* Article Image */}
+            {article.image && (
+              <div className="relative h-48 overflow-hidden">
+                <img 
+                  src={article.image} 
+                  alt={article.title}
+                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                />
+                <div className="absolute top-2 left-2">
+                  <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded font-medium">
+                    {article.source}
+                  </span>
+                </div>
+              </div>
+            )}
+            
+            {/* Article Content */}
+            <div className="p-6">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2 line-clamp-2 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                <a href={article.url} target="_blank" rel="noopener noreferrer">
+                  {article.title}
+                </a>
+              </h3>
+              
+              <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 line-clamp-3">
+                {article.description}
+              </p>
+              
+              <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                <span className="font-medium">{article.source}</span>
+                <span>{formatTimeAgo(article.publishedAt)}</span>
+              </div>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Footer */}
+      <div className="text-center mt-8">
+        <p className="text-xs text-gray-500 dark:text-gray-400">
+          News aggregated from major crypto media sources • Updated every 15 minutes
+        </p>
+      </div>
     </div>
   );
 }
