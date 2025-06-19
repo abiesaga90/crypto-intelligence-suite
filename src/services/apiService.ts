@@ -1,58 +1,12 @@
-import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
-import { API_CONFIG, ERROR_MESSAGES } from '@/config/constants';
+import axios, { AxiosInstance } from 'axios';
+import { API_CONFIG } from '@/config/constants';
 
-// Rate limiting class for hobbyist plan (30 requests/minute)
-class RateLimiter {
-  private requests: number[] = [];
-  private readonly maxRequests: number;
-  private readonly timeWindow: number; // in milliseconds
-
-  constructor(maxRequests: number = 30, timeWindowMinutes: number = 1) {
-    this.maxRequests = maxRequests;
-    this.timeWindow = timeWindowMinutes * 60 * 1000;
-  }
-
-  canMakeRequest(): boolean {
-    const now = Date.now();
-    // Remove requests older than time window
-    this.requests = this.requests.filter(time => now - time < this.timeWindow);
-    
-    return this.requests.length < this.maxRequests;
-  }
-
-  recordRequest(): void {
-    this.requests.push(Date.now());
-  }
-
-  getTimeUntilNextRequest(): number {
-    if (this.canMakeRequest()) return 0;
-    
-    const oldestRequest = Math.min(...this.requests);
-    return this.timeWindow - (Date.now() - oldestRequest);
-  }
-}
-
-// API Service class
+// API Service class for free APIs only
 class ApiService {
-  private coinglassApi: AxiosInstance;
   private coingeckoApi: AxiosInstance;
   private binanceApi: AxiosInstance;
-  private rateLimiter: RateLimiter;
 
   constructor() {
-    // Initialize rate limiter for hobbyist plan
-    this.rateLimiter = new RateLimiter(30, 1); // 30 requests per minute
-
-    // CoinGlass API setup
-    this.coinglassApi = axios.create({
-      baseURL: API_CONFIG.coinglass.baseUrl,
-      headers: {
-        'CG-API-KEY': API_CONFIG.coinglass.apiKey,
-        'Content-Type': 'application/json',
-      },
-      timeout: 30000,
-    });
-
     // CoinGecko API setup (free tier)
     this.coingeckoApi = axios.create({
       baseURL: API_CONFIG.alternatives.coingecko.baseUrl,
@@ -64,201 +18,9 @@ class ApiService {
       baseURL: API_CONFIG.alternatives.binance.baseUrl,
       timeout: 30000,
     });
-
-    // Setup interceptors
-    this.setupInterceptors();
   }
 
-  private setupInterceptors(): void {
-    // CoinGlass request interceptor for rate limiting
-    this.coinglassApi.interceptors.request.use(
-      (config) => {
-        if (!this.rateLimiter.canMakeRequest()) {
-          const waitTime = this.rateLimiter.getTimeUntilNextRequest();
-          throw new Error(`${ERROR_MESSAGES.RATE_LIMIT_EXCEEDED} Please wait ${Math.ceil(waitTime / 1000)} seconds.`);
-        }
-        this.rateLimiter.recordRequest();
-        return config;
-      },
-      (error) => Promise.reject(error)
-    );
-
-    // Response interceptor for error handling
-    this.coinglassApi.interceptors.response.use(
-      (response) => response,
-      (error) => {
-        if (error.response?.status === 429) {
-          throw new Error(ERROR_MESSAGES.RATE_LIMIT_EXCEEDED);
-        }
-        if (error.response?.status === 403) {
-          throw new Error(ERROR_MESSAGES.ENDPOINT_NOT_AVAILABLE);
-        }
-        return Promise.reject(error);
-      }
-    );
-  }
-
-  // ===== MARKET DATA ENDPOINTS (Available to Hobbyist) =====
-  
-  async getSupportedCoins(): Promise<any> {
-    try {
-      const response = await fetch(`/api/coinglass?endpoint=${encodeURIComponent(API_CONFIG.coinglass.endpoints.supportedCoins)}`);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      return await response.json();
-    } catch (error) {
-      console.error('Error fetching supported coins:', error);
-      throw error;
-    }
-  }
-
-  async getCoinsMarkets(limit: number = 30): Promise<any> {
-    try {
-      const response = await fetch(`/api/coinglass?endpoint=${encodeURIComponent(API_CONFIG.coinglass.endpoints.coinsMarkets)}&limit=${limit}`);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      return await response.json();
-    } catch (error) {
-      console.error('Error fetching coins markets:', error);
-      throw error;
-    }
-  }
-
-  async getCoinsPriceChange(timeframe: string = '24h'): Promise<any> {
-    try {
-      const response = await fetch(`/api/coinglass?endpoint=${encodeURIComponent(API_CONFIG.coinglass.endpoints.coinsPriceChange)}&time_type=${timeframe}`);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      return await response.json();
-    } catch (error) {
-      console.error('Error fetching price changes:', error);
-      throw error;
-    }
-  }
-
-  // ===== OPEN INTEREST ENDPOINTS (Key for institutional analysis) =====
-
-  async getOpenInterestHistory(symbol: string, interval: string = '4h'): Promise<any> {
-    try {
-      const response = await this.coinglassApi.get(API_CONFIG.coinglass.endpoints.openInterestHistory, {
-        params: { 
-          symbol: symbol.toUpperCase(),
-          interval,
-          limit: 168 // 1 week of 4h candles
-        }
-      });
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching open interest history:', error);
-      throw error;
-    }
-  }
-
-  async getAggregatedOpenInterest(symbol: string, interval: string = '4h'): Promise<any> {
-    try {
-      const response = await this.coinglassApi.get(API_CONFIG.coinglass.endpoints.openInterestAggregatedHistory, {
-        params: { 
-          symbol: symbol.toUpperCase(),
-          interval
-        }
-      });
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching aggregated open interest:', error);
-      throw error;
-    }
-  }
-
-  // ===== LONG-SHORT RATIO ENDPOINTS (Critical for retail vs institutional) =====
-
-  async getGlobalLongShortRatio(symbol: string): Promise<any> {
-    try {
-      const response = await fetch(`/api/coinglass?endpoint=${encodeURIComponent(API_CONFIG.coinglass.endpoints.longShortGlobalAccount)}&symbol=${symbol.toUpperCase()}`);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      return await response.json();
-    } catch (error) {
-      console.error('Error fetching global long-short ratio:', error);
-      throw error;
-    }
-  }
-
-  async getTopAccountRatio(symbol: string, interval: string = '4h'): Promise<any> {
-    try {
-      const response = await fetch(`/api/coinglass?endpoint=${encodeURIComponent(API_CONFIG.coinglass.endpoints.longShortTopAccount)}&symbol=${symbol.toUpperCase()}&interval=${interval}`);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      return await response.json();
-    } catch (error) {
-      console.error('Error fetching top account ratio:', error);
-      throw error;
-    }
-  }
-
-  async getTopPositionRatio(symbol: string, interval: string = '4h'): Promise<any> {
-    try {
-      const response = await fetch(`/api/coinglass?endpoint=${encodeURIComponent(API_CONFIG.coinglass.endpoints.longShortTopPosition)}&symbol=${symbol.toUpperCase()}&interval=${interval}`);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      return await response.json();
-    } catch (error) {
-      console.error('Error fetching top position ratio:', error);
-      throw error;
-    }
-  }
-
-  // ===== LIQUIDATION ENDPOINTS (Retail indicator) =====
-
-  async getLiquidationHistory(symbol: string, interval: string = '4h'): Promise<any> {
-    // Enforce hobbyist plan limitation
-    const validIntervals = ['4h', '12h', '1d', '3d', '1w'];
-    if (!validIntervals.includes(interval)) {
-      throw new Error(ERROR_MESSAGES.INTERVAL_TOO_SMALL);
-    }
-
-    try {
-      const response = await fetch(`/api/coinglass?endpoint=${encodeURIComponent(API_CONFIG.coinglass.endpoints.liquidationPairHistory)}&symbol=${symbol.toUpperCase()}&interval=${interval}`);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      return await response.json();
-    } catch (error) {
-      console.error('Error fetching liquidation history:', error);
-      throw error;
-    }
-  }
-
-  async getCoinLiquidationHistory(symbol: string): Promise<any> {
-    try {
-      const response = await this.coinglassApi.get(API_CONFIG.coinglass.endpoints.liquidationCoinHistory, {
-        params: { symbol: symbol.toUpperCase() }
-      });
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching coin liquidation history:', error);
-      throw error;
-    }
-  }
-
-  // ===== FUNDING RATE ENDPOINTS (Sentiment indicator) =====
-
-  async getFundingRateHistory(symbol: string, interval: string = '4h'): Promise<any> {
-    try {
-      const response = await fetch(`/api/coinglass?endpoint=${encodeURIComponent(API_CONFIG.coinglass.endpoints.fundingRateHistory)}&symbol=${symbol.toUpperCase()}&interval=${interval}`);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      return await response.json();
-    } catch (error) {
-      console.error('Error fetching funding rate history:', error);
-      throw error;
-    }
-  }
-
-  // ===== TAKER BUY/SELL ENDPOINTS (Market sentiment) =====
-
-  async getTakerBuySellRatio(symbol: string, interval: string = '4h'): Promise<any> {
-    try {
-      const response = await fetch(`/api/coinglass?endpoint=${encodeURIComponent(API_CONFIG.coinglass.endpoints.takerBuySellPairHistory)}&symbol=${symbol.toUpperCase()}&interval=${interval}`);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      return await response.json();
-    } catch (error) {
-      console.error('Error fetching taker buy/sell ratio:', error);
-      throw error;
-    }
-  }
-
-  // ===== SUPPLEMENTARY FREE APIs =====
+  // ===== FREE APIs ONLY =====
 
   async getCoinGeckoTopCoins(limit: number = 30): Promise<any> {
     try {
@@ -300,14 +62,13 @@ class ApiService {
     }
   }
 
-  // ===== RETAIL vs INSTITUTIONAL ANALYSIS =====
+  // ===== RETAIL vs INSTITUTIONAL ANALYSIS (Free APIs Only) =====
 
   async getRetailVsInstitutionalAnalysis(symbol: string): Promise<any> {
     try {
       console.log(`Starting analysis for ${symbol}`);
       
-      // Skip CoinGlass liquidation data entirely since it's not available on hobbyist plan
-      // Use real market analysis using only free APIs that we know work
+      // Use real market analysis using only free APIs that work
       const analysis = await this.createRealMarketAnalysis(symbol);
 
       return {
@@ -343,34 +104,6 @@ class ApiService {
         planLimitations: false
       };
     }
-  }
-
-  private analyzeRetailVsInstitutional(data: any): any {
-    // Simple analysis logic - can be enhanced
-    const signals = {
-      retailSignals: 0,
-      institutionalSignals: 0,
-      neutralSignals: 0
-    };
-
-    // Analyze long-short ratio divergence
-    // High retail long % often indicates retail FOMO
-    
-    // Analyze liquidation patterns
-    // High liquidation ratios often indicate retail over-leverage
-    
-    // Analyze funding rates
-    // Extreme funding rates often indicate retail positioning
-    
-    // Return analysis summary
-    return {
-      dominantType: signals.retailSignals > signals.institutionalSignals ? 'retail' : 
-                   signals.institutionalSignals > signals.retailSignals ? 'institutional' : 'mixed',
-      confidence: Math.abs(signals.retailSignals - signals.institutionalSignals) / 
-                 (signals.retailSignals + signals.institutionalSignals + signals.neutralSignals),
-      signals,
-      summary: 'Analysis based on long-short ratios, liquidation patterns, and funding rates'
-    };
   }
 
   private async createRealMarketAnalysis(symbol: string): Promise<any> {
@@ -525,16 +258,6 @@ class ApiService {
         error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
-  }
-
-  // ===== UTILITY METHODS =====
-
-  getRemainingRequests(): number {
-    return Math.max(0, 30 - this.rateLimiter['requests'].length);
-  }
-
-  getTimeUntilReset(): number {
-    return this.rateLimiter.getTimeUntilNextRequest();
   }
 }
 
