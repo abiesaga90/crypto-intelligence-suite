@@ -1368,20 +1368,48 @@ function NewsTab() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-4"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-6">
-                <div className="animate-pulse">
-                  <div className="h-40 bg-gray-200 dark:bg-gray-700 rounded mb-4"></div>
-                  <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2"></div>
-                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full mb-2"></div>
-                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
-                </div>
+        <div className="text-center mb-8">
+          <h2 className="text-3xl lg:text-4xl font-bold mb-3" style={{ color: COLORS.sandstone }}>
+            📰 Crypto News
+          </h2>
+          <p className="text-lg" style={{ color: COLORS.neutral }}>
+            Loading latest crypto news...
+          </p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div 
+              key={i} 
+              className="rounded-lg border p-4 animate-pulse"
+              style={{ 
+                backgroundColor: COLORS.surface,
+                borderColor: COLORS.deepIndigo
+              }}
+            >
+              <div className="flex items-center justify-between mb-3">
+                <div 
+                  className="h-5 rounded w-16"
+                  style={{ backgroundColor: COLORS.deepIndigo }}
+                ></div>
+                <div 
+                  className="h-3 rounded w-12"
+                  style={{ backgroundColor: COLORS.deepIndigo }}
+                ></div>
               </div>
-            ))}
-          </div>
+              <div 
+                className="h-5 rounded w-3/4 mb-2"
+                style={{ backgroundColor: COLORS.deepIndigo }}
+              ></div>
+              <div 
+                className="h-3 rounded w-full mb-1"
+                style={{ backgroundColor: COLORS.deepIndigo }}
+              ></div>
+              <div 
+                className="h-3 rounded w-2/3"
+                style={{ backgroundColor: COLORS.deepIndigo }}
+              ></div>
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -1389,15 +1417,27 @@ function NewsTab() {
 
   if (error) {
     return (
-      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-8 text-center">
-        <div className="text-red-500 mb-4 text-4xl">📰</div>
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+      <div 
+        className="rounded-lg border p-8 text-center"
+        style={{ 
+          backgroundColor: COLORS.surface,
+          borderColor: COLORS.deepIndigo
+        }}
+      >
+        <div className="text-4xl mb-4" style={{ color: COLORS.sunsetEmber }}>📰</div>
+        <h3 className="text-lg font-semibold mb-2" style={{ color: COLORS.sandstone }}>
           News Unavailable
         </h3>
-        <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
+        <p className="mb-4" style={{ color: COLORS.neutral }}>{error}</p>
         <button
           onClick={fetchNews}
-          className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+          className="px-4 py-2 rounded-lg transition-colors"
+          style={{ 
+            backgroundColor: COLORS.electricSky,
+            color: COLORS.white
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = COLORS.electricSky + 'dd'}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = COLORS.electricSky}
         >
           Try Again
         </button>
@@ -1409,64 +1449,67 @@ function NewsTab() {
     <div className="space-y-6">
       {/* Header */}
       <div className="text-center mb-8">
-        <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-3">
+        <h2 className="text-3xl lg:text-4xl font-bold mb-3" style={{ color: COLORS.sandstone }}>
           📰 Crypto News
         </h2>
-        <p className="text-lg text-gray-600 dark:text-gray-400">
+        <p className="text-lg" style={{ color: COLORS.neutral }}>
           Latest updates from The Block, CoinDesk, Decrypt & more
         </p>
       </div>
 
       {/* News Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {newsData.map((article, index) => (
           <motion.div
             key={index}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: index * 0.1 }}
-            className="bg-white dark:bg-gray-900 rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
+            className="rounded-lg border p-4 transition-all duration-300 hover:border-opacity-60 cursor-pointer"
+            style={{ 
+              backgroundColor: COLORS.surface,
+              borderColor: COLORS.deepIndigo
+            }}
+            onClick={() => window.open(article.url, '_blank')}
           >
-            {/* Article Image */}
-            {article.image && (
-              <div className="relative h-48 overflow-hidden">
-                <img 
-                  src={article.image} 
-                  alt={article.title}
-                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                />
-                <div className="absolute top-2 left-2">
-                  <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded font-medium">
-                    {article.source}
-                  </span>
-                </div>
-              </div>
-            )}
-            
-            {/* Article Content */}
-            <div className="p-6">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2 line-clamp-2 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                <a href={article.url} target="_blank" rel="noopener noreferrer">
-                  {article.title}
-                </a>
-              </h3>
-              
-              <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 line-clamp-3">
-                {article.description}
-              </p>
-              
-              <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-                <span className="font-medium">{article.source}</span>
-                <span>{formatTimeAgo(article.publishedAt)}</span>
-              </div>
+            {/* Source Badge */}
+            <div className="flex items-center justify-between mb-3">
+              <span 
+                className="text-xs px-2 py-1 rounded font-medium"
+                style={{ 
+                  backgroundColor: COLORS.electricSky + '20',
+                  color: COLORS.electricSky
+                }}
+              >
+                {article.source}
+              </span>
+              <span className="text-xs" style={{ color: COLORS.neutral }}>
+                {formatTimeAgo(article.publishedAt)}
+              </span>
             </div>
+            
+            {/* Article Title */}
+            <h3 
+              className="text-base font-semibold mb-2 line-clamp-2 hover:opacity-80 transition-opacity"
+              style={{ color: COLORS.sandstone }}
+            >
+              {article.title}
+            </h3>
+            
+            {/* Article Description */}
+            <p 
+              className="text-sm line-clamp-3 leading-relaxed"
+              style={{ color: COLORS.neutral }}
+            >
+              {article.description}
+            </p>
           </motion.div>
         ))}
       </div>
 
       {/* Footer */}
       <div className="text-center mt-8">
-        <p className="text-xs text-gray-500 dark:text-gray-400">
+        <p className="text-xs" style={{ color: COLORS.neutral }}>
           News aggregated from major crypto media sources • Updated every 15 minutes
         </p>
       </div>
