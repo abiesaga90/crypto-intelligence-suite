@@ -438,7 +438,7 @@ export default function CryptoDashboard() {
               >
                 <div className="flex items-center space-x-1 sm:space-x-2">
                   <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span>Dashboard</span>
+                  <span>Home</span>
                 </div>
               </button>
               
