@@ -122,7 +122,8 @@ export default function CryptoDashboard() {
           { id: 'bitcoin', symbol: 'btc', name: 'Bitcoin', current_price: 43500, price_change_percentage_24h: 2.5, market_cap: 850000000000, total_volume: 25000000000, image: 'https://assets.coingecko.com/coins/images/1/large/bitcoin.png', market_cap_rank: 1 },
           { id: 'ethereum', symbol: 'eth', name: 'Ethereum', current_price: 2600, price_change_percentage_24h: 1.8, market_cap: 320000000000, total_volume: 15000000000, image: 'https://assets.coingecko.com/coins/images/279/large/ethereum.png', market_cap_rank: 2 },
           { id: 'solana', symbol: 'sol', name: 'Solana', current_price: 98, price_change_percentage_24h: 4.2, market_cap: 45000000000, total_volume: 2500000000, image: 'https://assets.coingecko.com/coins/images/4128/large/solana.png', market_cap_rank: 3 },
-          { id: 'ripple', symbol: 'xrp', name: 'XRP', current_price: 0.55, price_change_percentage_24h: -1.2, market_cap: 30000000000, total_volume: 1800000000, image: 'https://assets.coingecko.com/coins/images/44/large/xrp-symbol-white-128.png', market_cap_rank: 4 },
+          { id: 'avalanche', symbol: 'avax', name: 'Avalanche', current_price: 35, price_change_percentage_24h: 6.8, market_cap: 12000000000, total_volume: 450000000, image: 'https://assets.coingecko.com/coins/images/12559/large/Avalanche_Circle_RedWhite_Trans.png', market_cap_rank: 6 },
+          { id: 'chainlink', symbol: 'link', name: 'Chainlink', current_price: 15.2, price_change_percentage_24h: 5.3, market_cap: 9000000000, total_volume: 380000000, image: 'https://assets.coingecko.com/coins/images/877/large/chainlink-new-logo.png', market_cap_rank: 7 },
           { id: 'dogecoin', symbol: 'doge', name: 'Dogecoin', current_price: 0.095, price_change_percentage_24h: 3.1, market_cap: 13500000000, total_volume: 950000000, image: 'https://assets.coingecko.com/coins/images/5/large/dogecoin.png', market_cap_rank: 5 }
         ];
         
@@ -365,19 +366,12 @@ export default function CryptoDashboard() {
               <div className="flex items-center space-x-3 min-w-0">
                 <TeroxxLogo 
                   height={28} 
-                  width={110}
+                  width={28}
                   showText={false}
                   color={COLORS.electricSky}
-                  className="sm:hidden flex-shrink-0"
+                  className="flex-shrink-0"
                 />
-                <TeroxxLogo 
-                  height={32} 
-                  width={140}
-                  showText={true}
-                  color={COLORS.electricSky}
-                  className="hidden sm:block flex-shrink-0"
-                />
-                <span className="text-lg sm:text-2xl font-bold" style={{ color: COLORS.sandstone }}>Terminal</span>
+                <h1 className="text-lg sm:text-2xl font-bold truncate" style={{ color: COLORS.sandstone }}>Teroxx Terminal</h1>
                 <span className="hidden sm:inline text-xs sm:text-sm px-2 py-1 rounded flex-shrink-0" style={{ backgroundColor: COLORS.sunsetEmber, color: COLORS.white }}>
                   Prototype
                 </span>
@@ -524,6 +518,15 @@ export default function CryptoDashboard() {
           />
         )}
       </main>
+
+      {/* Footer */}
+      <footer className="border-t mt-8" style={{ backgroundColor: COLORS.surface, borderColor: COLORS.deepIndigo }}>
+        <div className="container mx-auto px-4 sm:px-6 py-4">
+          <div className="text-center text-xs sm:text-sm" style={{ color: COLORS.neutral }}>
+            Prepared by <span className="font-medium">Aleksander Biesaga</span> for <span className="font-medium">Teroxx Team</span>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
@@ -604,11 +607,18 @@ function DashboardOverviewTab({ data, selectedCrypto, setSelectedCrypto }: {
 
 
 
-      {/* Top Coins Display */}
+      {/* Top Gainers Display */}
       <div className="mb-6 sm:mb-8">
-        <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Top Cryptocurrencies</h2>
+        <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 flex items-center space-x-2">
+          <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-green-400" />
+          <span>Top Gainers (24h)</span>
+        </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-          {data.topCoins.slice(0, 12).map((coin: any, index: number) => (
+          {data.topCoins
+            .filter((coin: any) => coin.price_change_percentage_24h > 0)
+            .sort((a: any, b: any) => (b.price_change_percentage_24h || 0) - (a.price_change_percentage_24h || 0))
+            .slice(0, 12)
+            .map((coin: any, index: number) => (
             <div key={coin.id || index} className="bg-gray-800 p-3 sm:p-4 rounded-lg border border-gray-700 hover:border-gray-600 transition-colors">
               <div className="flex items-center space-x-2 sm:space-x-3">
                 {coin.image && (
