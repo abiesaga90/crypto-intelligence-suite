@@ -202,7 +202,7 @@ export default function CryptoDashboard() {
           globalStats: {
             total_market_cap: { usd: 1750000000000 },
             total_volume: { usd: 65000000000 },
-            market_cap_percentage: { btc: 48.5 },
+            market_cap_percentage: { btc: 48.5, eth: 16.8 },
             active_cryptocurrencies: 12500
           },
           loading: false,
@@ -756,11 +756,11 @@ function DashboardOverviewTab({ data, selectedCrypto, setSelectedCrypto }: {
           
           <div className="rounded-lg p-3 sm:p-6" style={{ backgroundColor: COLORS.surface }}>
             <div className="flex items-center space-x-1 sm:space-x-2 mb-1 sm:mb-2">
-              <Users className="h-4 w-4 sm:h-5 sm:w-5" style={{ color: COLORS.sunsetEmber }} />
-              <span className="text-xs sm:text-sm" style={{ color: COLORS.neutral }}>Cryptos</span>
+              <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5" style={{ color: COLORS.electricSky }} />
+              <span className="text-xs sm:text-sm" style={{ color: COLORS.neutral }}>ETH Dom.</span>
             </div>
             <div className="text-lg sm:text-2xl font-bold" style={{ color: COLORS.sandstone }}>
-              {data.globalStats.active_cryptocurrencies?.toLocaleString() || 'N/A'}
+              {data.globalStats.market_cap_percentage?.eth?.toFixed(1) || 'N/A'}%
             </div>
           </div>
         </div>
