@@ -18,7 +18,8 @@ import {
   Target,
   DollarSign,
   ChevronDown,
-  LineChart
+  LineChart,
+  Search
 } from 'lucide-react';
 
 // Re-enable API service
@@ -65,6 +66,7 @@ export default function CryptoDashboard() {
   const [rateLimitInfo, setRateLimitInfo] = useState({ remaining: 30, resetTime: 0 });
   const [activeTab, setActiveTab] = useState<'overview' | 'analysis' | 'gainers-losers'>('overview');
   const [marketDropdownOpen, setMarketDropdownOpen] = useState(false);
+  const [researchDropdownOpen, setResearchDropdownOpen] = useState(false);
 
   const fetchDashboardData = async (isRefresh = false) => {
     try {
@@ -308,11 +310,14 @@ export default function CryptoDashboard() {
     };
   }, []);
 
-  // Close dropdown when clicking outside
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (marketDropdownOpen) {
         setMarketDropdownOpen(false);
+      }
+      if (researchDropdownOpen) {
+        setResearchDropdownOpen(false);
       }
     };
 
@@ -320,7 +325,7 @@ export default function CryptoDashboard() {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [marketDropdownOpen]);
+  }, [marketDropdownOpen, researchDropdownOpen]);
 
   const handleRefresh = () => {
     fetchDashboardData(true);
@@ -508,7 +513,10 @@ export default function CryptoDashboard() {
               {/* Market Dropdown */}
               <div className="relative">
                 <button 
-                  onClick={() => setMarketDropdownOpen(!marketDropdownOpen)}
+                  onClick={() => {
+                    setMarketDropdownOpen(!marketDropdownOpen);
+                    setResearchDropdownOpen(false); // Close other dropdown
+                  }}
                   className="px-3 sm:px-6 py-2 sm:py-3 rounded-t-lg font-medium border-b-2 text-xs sm:text-sm whitespace-nowrap flex-shrink-0 transition-all focus-mobile"
                   style={{ 
                     backgroundColor: activeTab === 'gainers-losers' ? COLORS.electricSky + '20' : 'transparent',
@@ -523,15 +531,17 @@ export default function CryptoDashboard() {
                   </div>
                 </button>
                 
-                {/* Dropdown Menu */}
-                {marketDropdownOpen && (
-                  <div 
-                    className="absolute top-full left-0 mt-1 py-2 w-48 rounded-lg shadow-lg border z-50"
-                    style={{ 
-                      backgroundColor: COLORS.surface,
-                      borderColor: COLORS.deepIndigo 
-                    }}
-                  >
+                                 {/* Dropdown Menu */}
+                 {marketDropdownOpen && (
+                   <div 
+                     className="absolute top-full left-0 mt-1 py-2 w-48 rounded-lg shadow-xl border"
+                     style={{ 
+                       backgroundColor: COLORS.surface,
+                       borderColor: COLORS.deepIndigo,
+                       zIndex: 9999,
+                       boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+                     }}
+                   >
                                          <button
                        onClick={() => {
                          setActiveTab('gainers-losers');
@@ -554,22 +564,59 @@ export default function CryptoDashboard() {
                 )}
               </div>
               
-              <button 
-                onClick={() => setActiveTab('analysis')}
-                className="px-3 sm:px-6 py-2 sm:py-3 rounded-t-lg font-medium text-xs sm:text-sm transition-all border-b-2 flex-shrink-0 whitespace-nowrap focus-mobile"
-                style={{ 
-                  backgroundColor: activeTab === 'analysis' ? COLORS.sunsetEmber : COLORS.sunsetEmber + '60',
-                  color: COLORS.white,
-                  borderColor: activeTab === 'analysis' ? COLORS.sunsetEmber : 'transparent',
-                  boxShadow: activeTab === 'analysis' ? `0 0 20px ${COLORS.sunsetEmber}40` : 'none'
-                }}
-              >
-                <div className="flex items-center space-x-1 sm:space-x-2">
-                  <Users className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <Building2 className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="font-semibold">Analysis Details</span>
-                </div>
-              </button>
+              {/* Research Dropdown */}
+              <div className="relative">
+                <button 
+                  onClick={() => {
+                    setResearchDropdownOpen(!researchDropdownOpen);
+                    setMarketDropdownOpen(false); // Close other dropdown
+                  }}
+                  className="px-3 sm:px-6 py-2 sm:py-3 rounded-t-lg font-medium text-xs sm:text-sm transition-all border-b-2 flex-shrink-0 whitespace-nowrap focus-mobile"
+                  style={{ 
+                    backgroundColor: activeTab === 'analysis' ? COLORS.sunsetEmber + '20' : 'transparent',
+                    color: activeTab === 'analysis' ? COLORS.sunsetEmber : COLORS.neutral,
+                    borderColor: activeTab === 'analysis' ? COLORS.sunsetEmber : 'transparent'
+                  }}
+                >
+                  <div className="flex items-center space-x-1 sm:space-x-2">
+                    <Search className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span>Research</span>
+                    <ChevronDown className={`h-3 w-3 sm:h-4 sm:w-4 transition-transform ${researchDropdownOpen ? 'rotate-180' : ''}`} />
+                  </div>
+                </button>
+                
+                                 {/* Dropdown Menu */}
+                 {researchDropdownOpen && (
+                   <div 
+                     className="absolute top-full left-0 mt-1 py-2 w-56 rounded-lg shadow-xl border"
+                     style={{ 
+                       backgroundColor: COLORS.surface,
+                       borderColor: COLORS.deepIndigo,
+                       zIndex: 9999,
+                       boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+                     }}
+                   >
+                    <button
+                      onClick={() => {
+                        setActiveTab('analysis');
+                        setResearchDropdownOpen(false);
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm transition-colors"
+                      style={{ 
+                        color: COLORS.neutral
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = COLORS.sunsetEmber + '20'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <Users className="h-4 w-4" />
+                        <Building2 className="h-4 w-4" />
+                        <span>Retail vs Institutional Analysis</span>
+                      </div>
+                    </button>
+                  </div>
+                )}
+              </div>
               
               <div 
                 className="px-6 py-3 rounded-t-lg font-medium text-sm opacity-50 cursor-not-allowed border-b-2 border-transparent flex-shrink-0 whitespace-nowrap"
