@@ -112,9 +112,14 @@ export default function CryptoDashboard() {
             });
             return null;
           }),
-          apiService.getTopGainers(12).catch((error) => {
-            console.error('Top Gainers error:', error);
-            return null;
+          // Force CoinGecko usage for Top Gainers to ensure logos are included
+          apiService.getTopGainersAndLosersFromCoinGecko(30).then(data => ({
+            data: data.gainers.slice(0, 12),
+            source: 'coingecko',
+            timestamp: Date.now()
+          })).catch((error) => {
+            console.error('CoinGecko Top Gainers error, falling back:', error);
+            return apiService.getTopGainers(12).catch(() => null);
           }),
         ]),
         timeoutPromise
@@ -128,12 +133,18 @@ export default function CryptoDashboard() {
       if (!coinGeckoData && !binanceData) {
         console.log('Both APIs failed, using fallback data for mobile compatibility');
         const fallbackData = [
-          { id: 'bitcoin', symbol: 'btc', name: 'Bitcoin', current_price: 43500, price_change_percentage_24h: 2.5, market_cap: 850000000000, total_volume: 25000000000, image: 'https://assets.coingecko.com/coins/images/1/large/bitcoin.png', market_cap_rank: 1 },
-          { id: 'ethereum', symbol: 'eth', name: 'Ethereum', current_price: 2600, price_change_percentage_24h: 1.8, market_cap: 320000000000, total_volume: 15000000000, image: 'https://assets.coingecko.com/coins/images/279/large/ethereum.png', market_cap_rank: 2 },
-          { id: 'solana', symbol: 'sol', name: 'Solana', current_price: 98, price_change_percentage_24h: 4.2, market_cap: 45000000000, total_volume: 2500000000, image: 'https://assets.coingecko.com/coins/images/4128/large/solana.png', market_cap_rank: 3 },
-          { id: 'avalanche', symbol: 'avax', name: 'Avalanche', current_price: 35, price_change_percentage_24h: 6.8, market_cap: 12000000000, total_volume: 450000000, image: 'https://assets.coingecko.com/coins/images/12559/large/Avalanche_Circle_RedWhite_Trans.png', market_cap_rank: 6 },
-          { id: 'chainlink', symbol: 'link', name: 'Chainlink', current_price: 15.2, price_change_percentage_24h: 5.3, market_cap: 9000000000, total_volume: 380000000, image: 'https://assets.coingecko.com/coins/images/877/large/chainlink-new-logo.png', market_cap_rank: 7 },
-          { id: 'dogecoin', symbol: 'doge', name: 'Dogecoin', current_price: 0.095, price_change_percentage_24h: 3.1, market_cap: 13500000000, total_volume: 950000000, image: 'https://assets.coingecko.com/coins/images/5/large/dogecoin.png', market_cap_rank: 5 }
+          { id: 'avalanche', symbol: 'avax', name: 'Avalanche', current_price: 35, price_change_percentage_24h: 8.5, market_cap: 12000000000, total_volume: 450000000, image: 'https://coin-images.coingecko.com/coins/images/12559/large/Avalanche_Circle_RedWhite_Trans.png', market_cap_rank: 6 },
+          { id: 'chainlink', symbol: 'link', name: 'Chainlink', current_price: 15.2, price_change_percentage_24h: 7.3, market_cap: 9000000000, total_volume: 380000000, image: 'https://coin-images.coingecko.com/coins/images/877/large/chainlink-new-logo.png', market_cap_rank: 7 },
+          { id: 'polygon', symbol: 'matic', name: 'Polygon', current_price: 0.85, price_change_percentage_24h: 6.8, market_cap: 7800000000, total_volume: 560000000, image: 'https://coin-images.coingecko.com/coins/images/4713/large/matic-token-icon.png', market_cap_rank: 8 },
+          { id: 'solana', symbol: 'sol', name: 'Solana', current_price: 98, price_change_percentage_24h: 5.2, market_cap: 45000000000, total_volume: 2500000000, image: 'https://coin-images.coingecko.com/coins/images/4128/large/solana.png', market_cap_rank: 3 },
+          { id: 'cardano', symbol: 'ada', name: 'Cardano', current_price: 0.45, price_change_percentage_24h: 4.9, market_cap: 15700000000, total_volume: 380000000, image: 'https://coin-images.coingecko.com/coins/images/975/large/cardano.png', market_cap_rank: 4 },
+          { id: 'binancecoin', symbol: 'bnb', name: 'BNB', current_price: 310, price_change_percentage_24h: 4.2, market_cap: 47000000000, total_volume: 1800000000, image: 'https://coin-images.coingecko.com/coins/images/825/large/bnb-icon2_2x.png', market_cap_rank: 5 },
+          { id: 'bitcoin', symbol: 'btc', name: 'Bitcoin', current_price: 43500, price_change_percentage_24h: 3.5, market_cap: 850000000000, total_volume: 25000000000, image: 'https://coin-images.coingecko.com/coins/images/1/large/bitcoin.png', market_cap_rank: 1 },
+          { id: 'ethereum', symbol: 'eth', name: 'Ethereum', current_price: 2600, price_change_percentage_24h: 3.2, market_cap: 320000000000, total_volume: 15000000000, image: 'https://coin-images.coingecko.com/coins/images/279/large/ethereum.png', market_cap_rank: 2 },
+          { id: 'polkadot', symbol: 'dot', name: 'Polkadot', current_price: 5.8, price_change_percentage_24h: 2.9, market_cap: 7200000000, total_volume: 180000000, image: 'https://coin-images.coingecko.com/coins/images/12171/large/polkadot.png', market_cap_rank: 9 },
+          { id: 'uniswap', symbol: 'uni', name: 'Uniswap', current_price: 6.2, price_change_percentage_24h: 2.6, market_cap: 3700000000, total_volume: 95000000, image: 'https://coin-images.coingecko.com/coins/images/12504/large/uni.jpg', market_cap_rank: 10 },
+          { id: 'dogecoin', symbol: 'doge', name: 'Dogecoin', current_price: 0.095, price_change_percentage_24h: 2.3, market_cap: 13500000000, total_volume: 950000000, image: 'https://coin-images.coingecko.com/coins/images/5/large/dogecoin.png', market_cap_rank: 11 },
+          { id: 'cosmos', symbol: 'atom', name: 'Cosmos', current_price: 8.1, price_change_percentage_24h: 2.1, market_cap: 3200000000, total_volume: 85000000, image: 'https://coin-images.coingecko.com/coins/images/1481/large/cosmos_hub.png', market_cap_rank: 12 }
         ];
         
         setData({
