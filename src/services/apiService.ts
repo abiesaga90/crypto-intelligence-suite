@@ -660,160 +660,154 @@ class ApiService {
   async getCryptoNews(): Promise<any[]> {
     console.log('🔄 Starting crypto news fetch...');
     
-    // Always return fallback data immediately if APIs are slow or failing
-    const fallbackNews = this.getFallbackNews();
-    
     try {
-      // Try multiple news sources in parallel with shorter timeout
-      const newsSources = [
-        this.getCoinDeskNews(),
-        this.getTheBlockNews(),
-        this.getDecryptNews(),
-        this.getCoinTelegraphNews()
+      // Try multiple strategies in parallel
+      const newsStrategies = [
+        this.getCoinGeckoNews(),
+        this.getNewsApiCrypto(),
+        this.getCryptoCompareNews(),
+        this.getRSSDirectFeeds()
       ];
 
-      // Use Promise.allSettled with a race condition - if any source takes too long, use fallback
-      const timeoutPromise = new Promise<any[]>((resolve) => {
-        setTimeout(() => {
-          console.log('⏰ News API timeout, using fallback data');
-          resolve(fallbackNews);
-        }, 5000); // 5 second timeout
-      });
-
-      const newsPromise = Promise.allSettled(newsSources).then((newsResults) => {
-        let allNews: any[] = [];
-        
-        // Collect successful results
-        newsResults.forEach((result, index) => {
-          if (result.status === 'fulfilled' && result.value && result.value.length > 0) {
-            console.log(`✅ News source ${index} succeeded with ${result.value.length} articles`);
-            allNews = allNews.concat(result.value);
-          } else {
-            console.warn(`❌ News source ${index} failed:`, result.status === 'rejected' ? result.reason : 'No data');
-          }
-        });
-
-        if (allNews.length > 0) {
-          // Sort by publication date (newest first) and limit to 12 articles
-          allNews.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
-          console.log(`📰 Successfully fetched ${allNews.length} news articles`);
-          return allNews.slice(0, 12);
+      // Wait for all strategies to complete (max 8 seconds)
+      const results = await Promise.allSettled(newsStrategies);
+      let allNews: any[] = [];
+      
+      // Collect successful results
+      results.forEach((result, index) => {
+        if (result.status === 'fulfilled' && result.value && result.value.length > 0) {
+          console.log(`✅ News strategy ${index} succeeded with ${result.value.length} articles`);
+          allNews = allNews.concat(result.value);
         } else {
-          console.log('📰 No news articles fetched, using fallback');
-          return fallbackNews;
+          console.warn(`❌ News strategy ${index} failed:`, result.status === 'rejected' ? result.reason?.message || result.reason : 'No data');
         }
       });
 
-      // Race between the news fetch and timeout
-      return await Promise.race([newsPromise, timeoutPromise]);
+      if (allNews.length > 0) {
+        // Remove duplicates based on title and sort by date
+        const uniqueNews = allNews.filter((article, index, self) => 
+          index === self.findIndex(a => a.title === article.title)
+        );
+        
+        uniqueNews.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+        console.log(`📰 Successfully fetched ${uniqueNews.length} unique news articles`);
+        return uniqueNews.slice(0, 12);
+      } else {
+        console.log('📰 No real news articles fetched, using high-quality fallback');
+        return this.getFallbackNews();
+      }
 
     } catch (error) {
       console.error('❌ Error fetching crypto news:', error);
-      return fallbackNews;
+      return this.getFallbackNews();
     }
   }
 
-  private async getCoinDeskNews(): Promise<any[]> {
+  // Strategy 1: CoinGecko News API
+  private async getCoinGeckoNews(): Promise<any[]> {
     try {
-      // Using RSS-to-JSON proxy service for CoinDesk
-      const response = await axios.get('https://api.rss2json.com/v1/api.json', {
+      console.log('🦎 Trying CoinGecko News API...');
+      const response = await this.coingeckoApi.get('/news', {
+        timeout: 8000
+      });
+
+      return response.data?.data?.slice(0, 4).map((item: any) => ({
+        title: item.title,
+        description: item.description?.substring(0, 200) + '...',
+        url: item.url,
+        source: 'CoinGecko News',
+        publishedAt: item.published_at,
+        image: item.thumb_2x || 'https://images.unsplash.com/photo-1640340434855-6084b1f4901c?w=400&h=200&fit=crop&q=80'
+      })) || [];
+    } catch (error) {
+      console.warn('🦎 CoinGecko news fetch failed:', error);
+      return [];
+    }
+  }
+
+  // Strategy 2: NewsAPI for crypto news
+  private async getNewsApiCrypto(): Promise<any[]> {
+    try {
+      console.log('📰 Trying NewsAPI crypto search...');
+      const response = await axios.get('https://newsapi.org/v2/everything', {
+        params: {
+          q: 'bitcoin OR cryptocurrency OR ethereum OR crypto',
+          language: 'en',
+          sortBy: 'publishedAt',
+          pageSize: 4,
+          apiKey: 'demo' // Using demo key for limited requests
+        },
+        timeout: 8000
+      });
+
+      return response.data?.articles?.map((item: any) => ({
+        title: item.title,
+        description: item.description?.substring(0, 200) + '...',
+        url: item.url,
+        source: item.source?.name || 'NewsAPI',
+        publishedAt: item.publishedAt,
+        image: item.urlToImage || 'https://images.unsplash.com/photo-1518544866330-4e35163b1d0f?w=400&h=200&fit=crop&q=80'
+      })) || [];
+    } catch (error) {
+      console.warn('📰 NewsAPI crypto fetch failed:', error);
+      return [];
+    }
+  }
+
+  // Strategy 3: CryptoCompare News
+  private async getCryptoCompareNews(): Promise<any[]> {
+    try {
+      console.log('🔍 Trying CryptoCompare News API...');
+      const response = await axios.get('https://min-api.cryptocompare.com/data/v2/news/', {
+        params: {
+          lang: 'EN',
+          feeds: 'coindesk,theblock,decrypt',
+          categories: 'BTC,ETH,Blockchain'
+        },
+        timeout: 8000
+      });
+
+      return response.data?.Data?.slice(0, 4).map((item: any) => ({
+        title: item.title,
+        description: item.body?.substring(0, 200) + '...',
+        url: item.guid,
+        source: item.source_info?.name || 'CryptoCompare',
+        publishedAt: new Date(item.published_on * 1000).toISOString(),
+        image: item.imageurl || 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=400&h=200&fit=crop&q=80'
+      })) || [];
+    } catch (error) {
+      console.warn('🔍 CryptoCompare news fetch failed:', error);
+      return [];
+    }
+  }
+
+  // Strategy 4: Direct RSS feeds using a different proxy
+  private async getRSSDirectFeeds(): Promise<any[]> {
+    try {
+      console.log('📡 Trying direct RSS feeds via RSS2JSON...');
+      const response = await axios.get('https://rss2json.com/api.json', {
         params: {
           rss_url: 'https://www.coindesk.com/arc/outboundfeeds/rss/',
-          count: 5
+          count: 4
         },
-        timeout: 10000
+        timeout: 8000
       });
 
-      console.log('CoinDesk response:', response.data);
-
-      return response.data.items?.map((item: any) => ({
+      return response.data?.items?.map((item: any) => ({
         title: item.title,
         description: item.description?.replace(/<[^>]*>/g, '').substring(0, 200) + '...',
         url: item.link,
-        source: 'CoinDesk',
+        source: 'CoinDesk RSS',
         publishedAt: item.pubDate,
-        image: item.thumbnail || 'https://via.placeholder.com/400x200/f7931a/ffffff?text=CoinDesk'
+        image: item.thumbnail || 'https://images.unsplash.com/photo-1621761191319-c6fb62004040?w=400&h=200&fit=crop&q=80'
       })) || [];
     } catch (error) {
-      console.warn('CoinDesk news fetch failed:', error);
+      console.warn('📡 RSS direct feeds failed:', error);
       return [];
     }
   }
 
-  private async getTheBlockNews(): Promise<any[]> {
-    try {
-      // Using RSS-to-JSON proxy service for The Block
-      const response = await axios.get('https://api.rss2json.com/v1/api.json', {
-        params: {
-          rss_url: 'https://www.theblock.co/rss.xml',
-          count: 5
-        },
-        timeout: 10000
-      });
 
-      return response.data.items?.map((item: any) => ({
-        title: item.title,
-        description: item.description?.replace(/<[^>]*>/g, '').substring(0, 200) + '...',
-        url: item.link,
-        source: 'The Block',
-        publishedAt: item.pubDate,
-        image: item.thumbnail || 'https://via.placeholder.com/400x200/1a1a1a/ffffff?text=The+Block'
-      })) || [];
-    } catch (error) {
-      console.warn('The Block news fetch failed:', error);
-      return [];
-    }
-  }
-
-  private async getDecryptNews(): Promise<any[]> {
-    try {
-      // Using RSS-to-JSON proxy service for Decrypt
-      const response = await axios.get('https://api.rss2json.com/v1/api.json', {
-        params: {
-          rss_url: 'https://decrypt.co/feed',
-          count: 5
-        },
-        timeout: 10000
-      });
-
-      return response.data.items?.map((item: any) => ({
-        title: item.title,
-        description: item.description?.replace(/<[^>]*>/g, '').substring(0, 200) + '...',
-        url: item.link,
-        source: 'Decrypt',
-        publishedAt: item.pubDate,
-        image: item.thumbnail || 'https://via.placeholder.com/400x200/1a1a1a/ffffff?text=Decrypt'
-      })) || [];
-    } catch (error) {
-      console.warn('Decrypt news fetch failed:', error);
-      return [];
-    }
-  }
-
-  private async getCoinTelegraphNews(): Promise<any[]> {
-    try {
-      // Using RSS-to-JSON proxy service for CoinTelegraph
-      const response = await axios.get('https://api.rss2json.com/v1/api.json', {
-        params: {
-          rss_url: 'https://cointelegraph.com/rss',
-          count: 5
-        },
-        timeout: 10000
-      });
-
-      return response.data.items?.map((item: any) => ({
-        title: item.title,
-        description: item.description?.replace(/<[^>]*>/g, '').substring(0, 200) + '...',
-        url: item.link,
-        source: 'Cointelegraph',
-        publishedAt: item.pubDate,
-        image: item.thumbnail || 'https://via.placeholder.com/400x200/1a1a1a/ffffff?text=Cointelegraph'
-      })) || [];
-    } catch (error) {
-      console.warn('Cointelegraph news fetch failed:', error);
-      return [];
-    }
-  }
 
   private getFallbackNews(): any[] {
     const now = Date.now();
