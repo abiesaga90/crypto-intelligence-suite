@@ -7,47 +7,116 @@ class ApiService {
   private binanceApi: AxiosInstance;
 
   constructor() {
+    // Detect if we're on mobile for timeout adjustments
+    const isMobile = typeof window !== 'undefined' && window.navigator && /Mobi|Android/i.test(window.navigator.userAgent);
+    const timeoutDuration = isMobile ? 45000 : 30000; // Longer timeout for mobile
+
     // CoinGecko API setup (free tier)
     this.coingeckoApi = axios.create({
       baseURL: API_CONFIG.alternatives.coingecko.baseUrl,
-      timeout: 30000,
+      timeout: timeoutDuration,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
     });
 
     // Binance API setup (free tier)
     this.binanceApi = axios.create({
       baseURL: API_CONFIG.alternatives.binance.baseUrl,
-      timeout: 30000,
+      timeout: timeoutDuration,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
     });
+
+    // Add request interceptors for better error handling
+    this.coingeckoApi.interceptors.request.use(
+      (config) => {
+        console.log(`CoinGecko API Request: ${config.method?.toUpperCase()} ${config.url}`);
+        return config;
+      },
+      (error) => {
+        console.error('CoinGecko API Request Error:', error);
+        return Promise.reject(error);
+      }
+    );
+
+    this.binanceApi.interceptors.request.use(
+      (config) => {
+        console.log(`Binance API Request: ${config.method?.toUpperCase()} ${config.url}`);
+        return config;
+      },
+      (error) => {
+        console.error('Binance API Request Error:', error);
+        return Promise.reject(error);
+      }
+    );
   }
 
   // ===== FREE APIs ONLY =====
 
   async getCoinGeckoTopCoins(limit: number = 30): Promise<any> {
-    try {
-      const response = await this.coingeckoApi.get(API_CONFIG.alternatives.coingecko.endpoints.coinsMarkets, {
-        params: {
-          vs_currency: 'usd',
-          order: 'market_cap_desc',
-          per_page: limit,
-          page: 1,
-          sparkline: false,
-          price_change_percentage: '1h,24h,7d'
+    const maxRetries = 3;
+    let retryCount = 0;
+
+    while (retryCount < maxRetries) {
+      try {
+        console.log(`Attempting CoinGecko API call (attempt ${retryCount + 1}/${maxRetries})`);
+        const response = await this.coingeckoApi.get(API_CONFIG.alternatives.coingecko.endpoints.coinsMarkets, {
+          params: {
+            vs_currency: 'usd',
+            order: 'market_cap_desc',
+            per_page: limit,
+            page: 1,
+            sparkline: false,
+            price_change_percentage: '1h,24h,7d'
+          }
+        });
+        console.log(`CoinGecko API success: Received ${response.data?.length || 0} coins`);
+        return response.data;
+      } catch (error) {
+        retryCount++;
+        console.error(`Error fetching CoinGecko top coins (attempt ${retryCount}):`, error);
+        
+        if (retryCount >= maxRetries) {
+          console.error('CoinGecko API failed after all retries');
+          throw error;
         }
-      });
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching CoinGecko top coins:', error);
-      throw error;
+        
+        // Wait before retry (exponential backoff)
+        const delay = Math.min(1000 * Math.pow(2, retryCount - 1), 5000);
+        console.log(`Retrying CoinGecko API in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
     }
   }
 
   async getCoinGeckoGlobalData(): Promise<any> {
-    try {
-      const response = await this.coingeckoApi.get(API_CONFIG.alternatives.coingecko.endpoints.globalData);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching CoinGecko global data:', error);
-      throw error;
+    const maxRetries = 3;
+    let retryCount = 0;
+
+    while (retryCount < maxRetries) {
+      try {
+        console.log(`Attempting CoinGecko Global API call (attempt ${retryCount + 1}/${maxRetries})`);
+        const response = await this.coingeckoApi.get(API_CONFIG.alternatives.coingecko.endpoints.globalData);
+        console.log('CoinGecko Global API success');
+        return response.data;
+      } catch (error) {
+        retryCount++;
+        console.error(`Error fetching CoinGecko global data (attempt ${retryCount}):`, error);
+        
+        if (retryCount >= maxRetries) {
+          console.error('CoinGecko Global API failed after all retries');
+          throw error;
+        }
+        
+        // Wait before retry
+        const delay = Math.min(1000 * Math.pow(2, retryCount - 1), 5000);
+        console.log(`Retrying CoinGecko Global API in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
     }
   }
 
