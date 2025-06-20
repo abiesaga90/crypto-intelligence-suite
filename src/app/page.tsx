@@ -78,6 +78,7 @@ export default function CryptoDashboard() {
   const [activeTab, setActiveTab] = useState<'overview' | 'analysis' | 'gainers-losers' | 'news'>('overview');
   const [marketDropdownOpen, setMarketDropdownOpen] = useState(false);
   const [researchDropdownOpen, setResearchDropdownOpen] = useState(false);
+  const [strategiesDropdownOpen, setStrategiesDropdownOpen] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState<{[key: string]: {top?: number, bottom?: number, left: number}}>({});
 
   // Viewport-aware dropdown positioning
@@ -344,6 +345,7 @@ export default function CryptoDashboard() {
       }
       if (researchDropdownOpen) {
         setResearchDropdownOpen(false);
+        setStrategiesDropdownOpen(false);
       }
     };
 
@@ -635,6 +637,7 @@ export default function CryptoDashboard() {
                       onClick={() => {
                         setActiveTab('analysis');
                         setResearchDropdownOpen(false);
+                        setStrategiesDropdownOpen(false);
                       }}
                       className="w-full px-4 py-2 text-left text-sm transition-colors"
                       style={{ 
@@ -649,6 +652,64 @@ export default function CryptoDashboard() {
                         <span>Retail vs Institutional Analysis</span>
                       </div>
                     </button>
+                    
+                    {/* Strategies Submenu */}
+                    <div className="relative">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setStrategiesDropdownOpen(!strategiesDropdownOpen);
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm transition-colors"
+                        style={{ 
+                          color: COLORS.neutral
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = COLORS.sunsetEmber + '20'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            <Target className="h-4 w-4" />
+                            <span>Strategies</span>
+                          </div>
+                          <ChevronDown className={`h-3 w-3 transition-transform ${strategiesDropdownOpen ? 'rotate-180' : '-rotate-90'}`} />
+                        </div>
+                      </button>
+                      
+                      {/* Strategies Submenu Items */}
+                      {strategiesDropdownOpen && (
+                        <div 
+                          className="ml-4 border-l-2 border-opacity-30"
+                          style={{ borderColor: COLORS.electricSky }}
+                        >
+                          <button
+                            onClick={() => {
+                              // TODO: Navigate to Funding Arbitrage page
+                              alert('🚀 Funding Arbitrage strategy coming soon!\n\nThis will include:\n• Cross-exchange funding rate monitoring\n• Arbitrage opportunity detection\n• Risk/reward calculations\n• Automated strategy recommendations');
+                              setResearchDropdownOpen(false);
+                              setStrategiesDropdownOpen(false);
+                            }}
+                            className="w-full px-4 py-2 text-left text-sm transition-colors"
+                            style={{ 
+                              color: COLORS.neutral
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = COLORS.electricSky + '20'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                          >
+                            <div className="flex items-center space-x-2">
+                              <DollarSign className="h-3 w-3" />
+                              <span>Funding Arbitrage</span>
+                              <span className="text-xs px-1.5 py-0.5 rounded" style={{ 
+                                backgroundColor: COLORS.electricSky + '30',
+                                color: COLORS.electricSky
+                              }}>
+                                Coming Soon
+                              </span>
+                            </div>
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
