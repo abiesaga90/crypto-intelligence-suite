@@ -414,7 +414,7 @@ export default function OrderBookAnalysis({ symbol }: OrderBookAnalysisProps) {
                     />
                     <Bar 
                       dataKey="volume" 
-                      fill={(entry: any) => entry?.isHVN ? COLORS.success : COLORS.neutral}
+                      fill={COLORS.primary}
                     />
                   </BarChart>
                 </ResponsiveContainer>

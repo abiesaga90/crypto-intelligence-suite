@@ -344,19 +344,19 @@ export default function ExchangeFlowMonitor({ symbol }: ExchangeFlowMonitorProps
                   <CartesianGrid strokeDasharray="3 3" stroke={COLORS.neutral} />
                   <XAxis 
                     dataKey="time" 
-                    stroke={COLORS.text.secondary}
+                    stroke={COLORS.neutral}
                     fontSize={12}
                   />
                   <YAxis 
-                    stroke={COLORS.text.secondary}
+                    stroke={COLORS.neutral}
                     fontSize={12}
                     tickFormatter={(value) => formatAmount(value)}
                   />
                   <Tooltip 
                     formatter={(value: number) => [formatAmount(value), 'Flow Volume']}
-                    labelStyle={{ color: COLORS.text.primary }}
+                    labelStyle={{ color: COLORS.text }}
                     contentStyle={{ 
-                      backgroundColor: COLORS.background.secondary,
+                      backgroundColor: COLORS.surface,
                       border: `1px solid ${COLORS.neutral}`,
                       borderRadius: '8px'
                     }}

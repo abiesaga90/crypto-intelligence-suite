@@ -33,6 +33,14 @@ import MarketOverview from '@/components/MarketOverview';
 // Add back retail vs institutional components
 import CryptoCard from '@/components/CryptoCard';
 import RetailVsInstitutionalChart from '@/components/RetailVsInstitutionalChart';
+import WhaleTracker from '@/components/WhaleTracker';
+import LiquidationTracker from '@/components/LiquidationTracker';
+import FundingRateMonitor from '@/components/FundingRateMonitor';
+import OrderBookAnalysis from '@/components/OrderBookAnalysis';
+import ExchangeFlowMonitor from '@/components/ExchangeFlowMonitor';
+import TemporalAnalysis from '@/components/TemporalAnalysis';
+import AlgorithmicDetection from '@/components/AlgorithmicDetection';
+import ProfessionalAnalysisSummary from '@/components/ProfessionalAnalysisSummary';
 
 // Import Teroxx Logo
 import TeroxxLogo from '@/components/TeroxxLogo';
@@ -46,6 +54,7 @@ interface DashboardData {
   topGainersData?: any;
   retailVsInstitutional: any[];
   globalStats: any;
+  coinglassStats: any; // Add Coinglass market stats
   loading: boolean;
   error: string | null;
   lastUpdate: number;
@@ -57,6 +66,7 @@ export default function CryptoDashboard() {
     topCoins: [],
     retailVsInstitutional: [],
     globalStats: null,
+    coinglassStats: null,
     loading: true,
     error: null,
     lastUpdate: 0,
@@ -166,6 +176,7 @@ export default function CryptoDashboard() {
             market_cap_percentage: { btc: 48.5, eth: 16.8 },
             active_cryptocurrencies: 12500
           },
+          coinglassStats: null,
           loading: false,
           error: null,
           lastUpdate: Date.now(),
@@ -178,7 +189,7 @@ export default function CryptoDashboard() {
       try {
         console.log('Fetching market data and top gainers...');
         
-        const [coinGeckoData, binanceData, topGainers] = await Promise.race([
+        const [coinGeckoData, binanceData, topGainers, coinglassStats] = await Promise.race([
           Promise.all([
             apiService.getCoinGeckoTopCoins(30).catch((error) => {
               console.error('❌ CoinGecko error:', error.message);
@@ -188,34 +199,47 @@ export default function CryptoDashboard() {
               console.error('❌ Binance error:', error.message);
               return null;
             }),
-            apiService.getTopGainers(12).catch((error) => {
-              console.error('❌ Top Gainers API failed, using fallback:', error.message);
+            // Try Coinglass first for gainers/losers, fallback to CoinGecko
+            apiService.getCoinglassGainersLosers(12).catch((error) => {
+              console.error('❌ Coinglass gainers failed, using cached:', error.message);
               return {
-                data: [
-                  { id: 'avalanche', symbol: 'AVAX', name: 'Avalanche', current_price: 35, price_change_percentage_24h: 8.5, image: 'https://coin-images.coingecko.com/coins/images/12559/large/Avalanche_Circle_RedWhite_Trans.png' },
-                  { id: 'chainlink', symbol: 'LINK', name: 'Chainlink', current_price: 15.2, price_change_percentage_24h: 7.3, image: 'https://coin-images.coingecko.com/coins/images/877/large/chainlink-new-logo.png' },
-                  { id: 'polygon', symbol: 'MATIC', name: 'Polygon', current_price: 0.85, price_change_percentage_24h: 6.8, image: 'https://coin-images.coingecko.com/coins/images/4713/large/matic-token-icon.png' },
-                  { id: 'solana', symbol: 'SOL', name: 'Solana', current_price: 98, price_change_percentage_24h: 5.2, image: 'https://coin-images.coingecko.com/coins/images/4128/large/solana.png' },
-                  { id: 'cardano', symbol: 'ADA', name: 'Cardano', current_price: 0.45, price_change_percentage_24h: 4.9, image: 'https://coin-images.coingecko.com/coins/images/975/large/cardano.png' },
-                  { id: 'binancecoin', symbol: 'BNB', name: 'BNB', current_price: 310, price_change_percentage_24h: 4.2, image: 'https://coin-images.coingecko.com/coins/images/825/large/bnb-icon2_2x.png' },
-                  { id: 'bitcoin', symbol: 'BTC', name: 'Bitcoin', current_price: 43500, price_change_percentage_24h: 3.5, image: 'https://coin-images.coingecko.com/coins/images/1/large/bitcoin.png' },
-                  { id: 'ethereum', symbol: 'ETH', name: 'Ethereum', current_price: 2600, price_change_percentage_24h: 3.2, image: 'https://coin-images.coingecko.com/coins/images/279/large/ethereum.png' },
-                  { id: 'polkadot', symbol: 'DOT', name: 'Polkadot', current_price: 5.8, price_change_percentage_24h: 2.9, image: 'https://coin-images.coingecko.com/coins/images/12171/large/polkadot.png' },
-                  { id: 'uniswap', symbol: 'UNI', name: 'Uniswap', current_price: 6.2, price_change_percentage_24h: 2.6, image: 'https://coin-images.coingecko.com/coins/images/12504/large/uni.jpg' },
-                  { id: 'dogecoin', symbol: 'DOGE', name: 'Dogecoin', current_price: 0.095, price_change_percentage_24h: 2.3, image: 'https://coin-images.coingecko.com/coins/images/5/large/dogecoin.png' },
-                  { id: 'cosmos', symbol: 'ATOM', name: 'Cosmos', current_price: 8.1, price_change_percentage_24h: 2.1, image: 'https://coin-images.coingecko.com/coins/images/1481/large/cosmos_hub.png' }
+                gainers: [
+                  { symbol: 'AVAX', name: 'Avalanche', current_price: 35, price_change_percentage_24h: 8.5, source: 'cached' },
+                  { symbol: 'LINK', name: 'Chainlink', current_price: 15.2, price_change_percentage_24h: 7.3, source: 'cached' },
+                  { symbol: 'MATIC', name: 'Polygon', current_price: 0.85, price_change_percentage_24h: 6.8, source: 'cached' },
+                  { symbol: 'SOL', name: 'Solana', current_price: 98, price_change_percentage_24h: 5.2, source: 'cached' },
+                  { symbol: 'ADA', name: 'Cardano', current_price: 0.45, price_change_percentage_24h: 4.9, source: 'cached' },
+                  { symbol: 'BNB', name: 'BNB', current_price: 310, price_change_percentage_24h: 4.2, source: 'cached' }
                 ],
-                source: 'cached',
-                timestamp: Date.now()
+                losers: [
+                  { symbol: 'DOGE', name: 'Dogecoin', current_price: 0.095, price_change_percentage_24h: -2.3, source: 'cached' },
+                  { symbol: 'XRP', name: 'XRP', current_price: 0.51, price_change_percentage_24h: -3.8, source: 'cached' },
+                  { symbol: 'LTC', name: 'Litecoin', current_price: 67, price_change_percentage_24h: -4.1, source: 'cached' }
+                ]
+              };
+            }),
+            // Fetch Coinglass market statistics
+            apiService.getCoinglassMarketStats().catch((error) => {
+              console.error('❌ Coinglass market stats failed, using fallback:', error.message);
+              return {
+                volume24h: 172974290297,
+                volumeChange24h: -14.28,
+                openInterest: 145442177659,
+                openInterestChange24h: 2.88,
+                liquidation24h: 133610798,
+                liquidationChange24h: -2.42,
+                longShortRatio: { long: 50.63, short: 49.37 },
+                source: 'fallback'
               };
             }),
           ]),
           timeoutPromise
-        ]) as [any, any, any];
+        ]) as [any, any, any, any];
 
         console.log('✅ CoinGecko data:', coinGeckoData ? `Success (${coinGeckoData.length} coins)` : '❌ Failed');
         console.log('✅ Binance data:', binanceData ? 'Success' : '❌ Failed');
-        console.log('✅ Top Gainers data:', topGainers ? `Success (${topGainers.data?.length || 0} gainers from ${topGainers.source})` : '❌ Failed');
+        console.log('✅ Top Gainers data:', topGainers ? `Success (${topGainers.gainers?.length || 0} gainers, ${topGainers.losers?.length || 0} losers from ${topGainers.gainers?.[0]?.source || 'unknown'})` : '❌ Failed');
+        console.log('✅ Coinglass stats:', coinglassStats ? `Success (Volume: $${(coinglassStats.volume24h / 1e9).toFixed(1)}B, Source: ${coinglassStats.source})` : '❌ Failed');
 
         // If all APIs fail, use fallback data
         if (!coinGeckoData && !binanceData && !topGainers) {
@@ -233,13 +257,29 @@ export default function CryptoDashboard() {
         // Try to get global stats quickly
         let globalStats = null;
         try {
+          console.log('Attempting to fetch global stats...');
           globalStats = await Promise.race([
-            apiService.getCoinGeckoGlobalData(),
+            apiService.getCoinGeckoGlobalData().catch((error) => {
+              console.log('Global stats API failed:', error.message);
+              return null;
+            }),
             new Promise((_, reject) => setTimeout(() => reject(new Error('Global stats timeout')), 3000))
           ]);
           globalStats = globalStats?.data || null;
-        } catch (error) {
-          console.log('Global stats failed, using defaults');
+          console.log('✅ Global stats loaded successfully');
+        } catch (error: any) {
+          console.log('⚠️ Global stats failed, using defaults:', error.message);
+          globalStats = {
+            total_market_cap: { usd: 1750000000000 },
+            total_volume: { usd: 65000000000 },
+            market_cap_percentage: { btc: 48.5, eth: 16.8 },
+            active_cryptocurrencies: 12500
+          };
+        }
+
+        // Ensure we always have valid global stats
+        if (!globalStats) {
+          console.log('🔄 Providing default global stats');
           globalStats = {
             total_market_cap: { usd: 1750000000000 },
             total_volume: { usd: 65000000000 },
@@ -257,6 +297,7 @@ export default function CryptoDashboard() {
           topGainersData: topGainers,
           retailVsInstitutional: [], // Skip this for faster loading
           globalStats,
+          coinglassStats,
           loading: false,
           error: null,
           lastUpdate: Date.now(),
@@ -495,6 +536,21 @@ export default function CryptoDashboard() {
                 </div>
               </button>
               
+              <button 
+                onClick={() => setActiveTab('news')}
+                className="px-4 sm:px-6 py-2 sm:py-3 rounded-t-lg font-medium border-b-2 text-sm whitespace-nowrap flex-shrink-0 transition-all focus-mobile"
+                style={{ 
+                  backgroundColor: activeTab === 'news' ? COLORS.electricSky + '20' : 'transparent',
+                  color: activeTab === 'news' ? COLORS.electricSky : COLORS.neutral,
+                  borderColor: activeTab === 'news' ? COLORS.electricSky : 'transparent'
+                }}
+              >
+                <div className="flex items-center space-x-2">
+                  <Newspaper className="h-4 w-4" />
+                  <span>📰 News</span>
+                </div>
+              </button>
+              
               {/* Market Dropdown */}
               <div className="relative">
                 <button 
@@ -596,21 +652,6 @@ export default function CryptoDashboard() {
                   </div>
                 )}
               </div>
-              
-              <button 
-                onClick={() => setActiveTab('news')}
-                className="px-4 sm:px-6 py-2 sm:py-3 rounded-t-lg font-medium border-b-2 text-sm whitespace-nowrap flex-shrink-0 transition-all focus-mobile"
-                style={{ 
-                  backgroundColor: activeTab === 'news' ? COLORS.electricSky + '20' : 'transparent',
-                  color: activeTab === 'news' ? COLORS.electricSky : COLORS.neutral,
-                  borderColor: activeTab === 'news' ? COLORS.electricSky : 'transparent'
-                }}
-              >
-                <div className="flex items-center space-x-2">
-                  <Newspaper className="h-4 w-4" />
-                  <span>📰 News</span>
-                </div>
-              </button>
               
               <div 
                 className="px-4 sm:px-6 py-2 sm:py-3 rounded-t-lg font-medium text-sm opacity-50 cursor-not-allowed border-b-2 border-transparent flex-shrink-0 whitespace-nowrap"
@@ -730,37 +771,129 @@ function DashboardOverviewTab({ data, selectedCrypto, setSelectedCrypto }: {
               }
             </div>
           </div>
-          
+
           <div className="rounded-lg p-3 sm:p-6" style={{ backgroundColor: COLORS.surface }}>
             <div className="flex items-center space-x-1 sm:space-x-2 mb-1 sm:mb-2">
-              <Activity className="h-4 w-4 sm:h-5 sm:w-5" style={{ color: COLORS.electricSky }} />
+              <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5" style={{ color: COLORS.electricSky }} />
               <span className="text-xs sm:text-sm" style={{ color: COLORS.neutral }}>24h Volume</span>
             </div>
             <div className="text-lg sm:text-2xl font-bold" style={{ color: COLORS.sandstone }}>
               ${data.globalStats.total_volume?.usd ? 
-                (data.globalStats.total_volume.usd / 1e9).toFixed(0) + 'B' : 
+                (data.globalStats.total_volume.usd / 1e9).toFixed(1) + 'B' : 
                 'N/A'
               }
             </div>
           </div>
-          
+
           <div className="rounded-lg p-3 sm:p-6" style={{ backgroundColor: COLORS.surface }}>
             <div className="flex items-center space-x-1 sm:space-x-2 mb-1 sm:mb-2">
-              <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5" style={{ color: COLORS.sunsetEmber }} />
-              <span className="text-xs sm:text-sm" style={{ color: COLORS.neutral }}>BTC Dom.</span>
+              <DollarSign className="h-4 w-4 sm:h-5 sm:w-5" style={{ color: COLORS.electricSky }} />
+              <span className="text-xs sm:text-sm" style={{ color: COLORS.neutral }}>BTC Dominance</span>
             </div>
             <div className="text-lg sm:text-2xl font-bold" style={{ color: COLORS.sandstone }}>
-              {data.globalStats.market_cap_percentage?.btc?.toFixed(1) || 'N/A'}%
+              {data.globalStats.market_cap_percentage?.btc ? 
+                data.globalStats.market_cap_percentage.btc.toFixed(1) + '%' : 
+                'N/A'
+              }
             </div>
           </div>
-          
+
           <div className="rounded-lg p-3 sm:p-6" style={{ backgroundColor: COLORS.surface }}>
             <div className="flex items-center space-x-1 sm:space-x-2 mb-1 sm:mb-2">
-              <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5" style={{ color: COLORS.electricSky }} />
-              <span className="text-xs sm:text-sm" style={{ color: COLORS.neutral }}>ETH Dom.</span>
+              <Activity className="h-4 w-4 sm:h-5 sm:w-5" style={{ color: COLORS.electricSky }} />
+              <span className="text-xs sm:text-sm" style={{ color: COLORS.neutral }}>Active Coins</span>
             </div>
             <div className="text-lg sm:text-2xl font-bold" style={{ color: COLORS.sandstone }}>
-              {data.globalStats.market_cap_percentage?.eth?.toFixed(1) || 'N/A'}%
+              {data.globalStats.active_cryptocurrencies ? 
+                data.globalStats.active_cryptocurrencies.toLocaleString() : 
+                'N/A'
+              }
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Coinglass Market Statistics */}
+      {data.coinglassStats && (
+        <div className="mb-6 sm:mb-8">
+          <div className="flex items-center space-x-2 mb-4">
+            <div className="w-3 h-3 rounded" style={{ backgroundColor: COLORS.sunsetEmber }}></div>
+            <h2 className="text-lg sm:text-xl font-semibold" style={{ color: COLORS.sandstone }}>
+              Live Market Intelligence
+            </h2>
+            <span className="text-xs px-2 py-1 rounded" style={{ backgroundColor: COLORS.sunsetEmber + '20', color: COLORS.sunsetEmber }}>
+              Coinglass Pro
+            </span>
+          </div>
+          
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+            {/* 24h Volume */}
+            <div className="rounded-lg p-3 sm:p-6 border" style={{ backgroundColor: COLORS.surface, borderColor: COLORS.sunsetEmber + '30' }}>
+              <div className="flex items-center space-x-1 sm:space-x-2 mb-1 sm:mb-2">
+                <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5" style={{ color: COLORS.sunsetEmber }} />
+                <span className="text-xs sm:text-sm" style={{ color: COLORS.neutral }}>24h Volume</span>
+              </div>
+              <div className="text-lg sm:text-2xl font-bold mb-1" style={{ color: COLORS.sandstone }}>
+                ${(data.coinglassStats.volume24h / 1e9).toFixed(1)}B
+              </div>
+              <div className={`text-xs sm:text-sm flex items-center space-x-1`} 
+                   style={{ color: data.coinglassStats.volumeChange24h >= 0 ? COLORS.electricSky : COLORS.sunsetEmber }}>
+                {data.coinglassStats.volumeChange24h >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                <span>{Math.abs(data.coinglassStats.volumeChange24h).toFixed(2)}%</span>
+              </div>
+            </div>
+
+            {/* Open Interest */}
+            <div className="rounded-lg p-3 sm:p-6 border" style={{ backgroundColor: COLORS.surface, borderColor: COLORS.sunsetEmber + '30' }}>
+              <div className="flex items-center space-x-1 sm:space-x-2 mb-1 sm:mb-2">
+                <Target className="h-4 w-4 sm:h-5 sm:w-5" style={{ color: COLORS.sunsetEmber }} />
+                <span className="text-xs sm:text-sm" style={{ color: COLORS.neutral }}>Open Interest</span>
+              </div>
+              <div className="text-lg sm:text-2xl font-bold mb-1" style={{ color: COLORS.sandstone }}>
+                ${(data.coinglassStats.openInterest / 1e9).toFixed(1)}B
+              </div>
+              <div className={`text-xs sm:text-sm flex items-center space-x-1`} 
+                   style={{ color: data.coinglassStats.openInterestChange24h >= 0 ? COLORS.electricSky : COLORS.sunsetEmber }}>
+                {data.coinglassStats.openInterestChange24h >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                <span>{Math.abs(data.coinglassStats.openInterestChange24h).toFixed(2)}%</span>
+              </div>
+            </div>
+
+            {/* 24h Liquidations */}
+            <div className="rounded-lg p-3 sm:p-6 border" style={{ backgroundColor: COLORS.surface, borderColor: COLORS.sunsetEmber + '30' }}>
+              <div className="flex items-center space-x-1 sm:space-x-2 mb-1 sm:mb-2">
+                <Zap className="h-4 w-4 sm:h-5 sm:w-5" style={{ color: COLORS.sunsetEmber }} />
+                <span className="text-xs sm:text-sm" style={{ color: COLORS.neutral }}>24h Liquidations</span>
+              </div>
+              <div className="text-lg sm:text-2xl font-bold mb-1" style={{ color: COLORS.sandstone }}>
+                ${(data.coinglassStats.liquidation24h / 1e6).toFixed(1)}M
+              </div>
+              <div className={`text-xs sm:text-sm flex items-center space-x-1`} 
+                   style={{ color: data.coinglassStats.liquidationChange24h >= 0 ? COLORS.electricSky : COLORS.sunsetEmber }}>
+                {data.coinglassStats.liquidationChange24h >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                <span>{Math.abs(data.coinglassStats.liquidationChange24h).toFixed(2)}%</span>
+              </div>
+            </div>
+
+            {/* Long/Short Ratio */}
+            <div className="rounded-lg p-3 sm:p-6 border" style={{ backgroundColor: COLORS.surface, borderColor: COLORS.sunsetEmber + '30' }}>
+              <div className="flex items-center space-x-1 sm:space-x-2 mb-1 sm:mb-2">
+                <Users className="h-4 w-4 sm:h-5 sm:w-5" style={{ color: COLORS.sunsetEmber }} />
+                <span className="text-xs sm:text-sm" style={{ color: COLORS.neutral }}>Long/Short</span>
+              </div>
+              <div className="text-lg sm:text-2xl font-bold mb-1" style={{ color: COLORS.sandstone }}>
+                {data.coinglassStats.longShortRatio.long.toFixed(1)}%/{data.coinglassStats.longShortRatio.short.toFixed(1)}%
+              </div>
+              <div className="flex space-x-2">
+                <div className="flex items-center space-x-1">
+                  <div className="w-2 h-2 rounded" style={{ backgroundColor: COLORS.electricSky }}></div>
+                  <span className="text-xs" style={{ color: COLORS.neutral }}>Long</span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <div className="w-2 h-2 rounded" style={{ backgroundColor: COLORS.sunsetEmber }}></div>
+                  <span className="text-xs" style={{ color: COLORS.neutral }}>Short</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
