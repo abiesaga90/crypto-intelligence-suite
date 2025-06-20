@@ -74,7 +74,7 @@ export default function CryptoDashboard() {
       if (isRefresh) setRefreshing(true);
       else setData(prev => ({ ...prev, loading: true, error: null }));
 
-      console.log('Starting dashboard data fetch...');
+              console.log('🚀 Starting dashboard data fetch using CoinGecko Free API only...');
 
       setRateLimitInfo({
         remaining: 30, // Free APIs - no rate limiting needed
@@ -82,10 +82,10 @@ export default function CryptoDashboard() {
       });
 
       // Add timeout to prevent hanging
-      const FETCH_TIMEOUT = 30000; // 30 seconds
+      const FETCH_TIMEOUT = 15000; // 15 seconds (reduced for faster fallback)
       
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Request timeout after 30 seconds')), FETCH_TIMEOUT);
+        setTimeout(() => reject(new Error('Request timeout after 15 seconds')), FETCH_TIMEOUT);
       });
 
       // Fetch basic market data and top gainers with better mobile handling
@@ -118,57 +118,35 @@ export default function CryptoDashboard() {
             });
             return null;
           }),
-          // Force CoinGecko usage for Top Gainers to ensure logos are included
-          apiService.getTopGainersAndLosersFromCoinGecko(30).then(data => ({
-            data: data.gainers.slice(0, 12),
-            source: 'coingecko',
-            timestamp: Date.now()
-          })).catch((error) => {
-            console.error('CoinGecko Top Gainers API failed, trying regular CoinGecko market data:', error);
-            // Fallback to regular CoinGecko market data and filter for gainers
-            return apiService.getCoinGeckoTopCoins(100).then(marketData => {
-              if (marketData && marketData.length > 0) {
-                const gainers = marketData
-                  .filter((coin: any) => coin.price_change_percentage_24h > 0 && coin.total_volume > 50000)
-                  .sort((a: any, b: any) => b.price_change_percentage_24h - a.price_change_percentage_24h)
-                  .slice(0, 12);
-                console.log(`Using CoinGecko market data fallback: ${gainers.length} gainers with logos`);
-                return {
-                  data: gainers,
-                  source: 'coingecko',
-                  timestamp: Date.now()
-                };
-              }
-              throw new Error('No CoinGecko market data available');
-            }).catch(() => {
-              console.warn('All CoinGecko methods failed, using fallback data with logos');
-              return {
-                data: [
-                  { id: 'avalanche', symbol: 'AVAX', name: 'Avalanche', current_price: 35, price_change_percentage_24h: 8.5, image: 'https://coin-images.coingecko.com/coins/images/12559/large/Avalanche_Circle_RedWhite_Trans.png' },
-                  { id: 'chainlink', symbol: 'LINK', name: 'Chainlink', current_price: 15.2, price_change_percentage_24h: 7.3, image: 'https://coin-images.coingecko.com/coins/images/877/large/chainlink-new-logo.png' },
-                  { id: 'polygon', symbol: 'MATIC', name: 'Polygon', current_price: 0.85, price_change_percentage_24h: 6.8, image: 'https://coin-images.coingecko.com/coins/images/4713/large/matic-token-icon.png' },
-                  { id: 'solana', symbol: 'SOL', name: 'Solana', current_price: 98, price_change_percentage_24h: 5.2, image: 'https://coin-images.coingecko.com/coins/images/4128/large/solana.png' },
-                  { id: 'cardano', symbol: 'ADA', name: 'Cardano', current_price: 0.45, price_change_percentage_24h: 4.9, image: 'https://coin-images.coingecko.com/coins/images/975/large/cardano.png' },
-                  { id: 'binancecoin', symbol: 'BNB', name: 'BNB', current_price: 310, price_change_percentage_24h: 4.2, image: 'https://coin-images.coingecko.com/coins/images/825/large/bnb-icon2_2x.png' },
-                  { id: 'bitcoin', symbol: 'BTC', name: 'Bitcoin', current_price: 43500, price_change_percentage_24h: 3.5, image: 'https://coin-images.coingecko.com/coins/images/1/large/bitcoin.png' },
-                  { id: 'ethereum', symbol: 'ETH', name: 'Ethereum', current_price: 2600, price_change_percentage_24h: 3.2, image: 'https://coin-images.coingecko.com/coins/images/279/large/ethereum.png' },
-                  { id: 'polkadot', symbol: 'DOT', name: 'Polkadot', current_price: 5.8, price_change_percentage_24h: 2.9, image: 'https://coin-images.coingecko.com/coins/images/12171/large/polkadot.png' },
-                  { id: 'uniswap', symbol: 'UNI', name: 'Uniswap', current_price: 6.2, price_change_percentage_24h: 2.6, image: 'https://coin-images.coingecko.com/coins/images/12504/large/uni.jpg' },
-                  { id: 'dogecoin', symbol: 'DOGE', name: 'Dogecoin', current_price: 0.095, price_change_percentage_24h: 2.3, image: 'https://coin-images.coingecko.com/coins/images/5/large/dogecoin.png' },
-                  { id: 'cosmos', symbol: 'ATOM', name: 'Cosmos', current_price: 8.1, price_change_percentage_24h: 2.1, image: 'https://coin-images.coingecko.com/coins/images/1481/large/cosmos_hub.png' }
-                ],
-                source: 'coingecko',
-                timestamp: Date.now()
-              };
-            });
+          // Use the improved free API for Top Gainers
+          apiService.getTopGainers(12).catch((error) => {
+            console.error('Top Gainers API failed, using fallback data:', error);
+            return {
+              data: [
+                { id: 'avalanche', symbol: 'AVAX', name: 'Avalanche', current_price: 35, price_change_percentage_24h: 8.5, image: 'https://coin-images.coingecko.com/coins/images/12559/large/Avalanche_Circle_RedWhite_Trans.png' },
+                { id: 'chainlink', symbol: 'LINK', name: 'Chainlink', current_price: 15.2, price_change_percentage_24h: 7.3, image: 'https://coin-images.coingecko.com/coins/images/877/large/chainlink-new-logo.png' },
+                { id: 'polygon', symbol: 'MATIC', name: 'Polygon', current_price: 0.85, price_change_percentage_24h: 6.8, image: 'https://coin-images.coingecko.com/coins/images/4713/large/matic-token-icon.png' },
+                { id: 'solana', symbol: 'SOL', name: 'Solana', current_price: 98, price_change_percentage_24h: 5.2, image: 'https://coin-images.coingecko.com/coins/images/4128/large/solana.png' },
+                { id: 'cardano', symbol: 'ADA', name: 'Cardano', current_price: 0.45, price_change_percentage_24h: 4.9, image: 'https://coin-images.coingecko.com/coins/images/975/large/cardano.png' },
+                { id: 'binancecoin', symbol: 'BNB', name: 'BNB', current_price: 310, price_change_percentage_24h: 4.2, image: 'https://coin-images.coingecko.com/coins/images/825/large/bnb-icon2_2x.png' },
+                { id: 'bitcoin', symbol: 'BTC', name: 'Bitcoin', current_price: 43500, price_change_percentage_24h: 3.5, image: 'https://coin-images.coingecko.com/coins/images/1/large/bitcoin.png' },
+                { id: 'ethereum', symbol: 'ETH', name: 'Ethereum', current_price: 2600, price_change_percentage_24h: 3.2, image: 'https://coin-images.coingecko.com/coins/images/279/large/ethereum.png' },
+                { id: 'polkadot', symbol: 'DOT', name: 'Polkadot', current_price: 5.8, price_change_percentage_24h: 2.9, image: 'https://coin-images.coingecko.com/coins/images/12171/large/polkadot.png' },
+                { id: 'uniswap', symbol: 'UNI', name: 'Uniswap', current_price: 6.2, price_change_percentage_24h: 2.6, image: 'https://coin-images.coingecko.com/coins/images/12504/large/uni.jpg' },
+                { id: 'dogecoin', symbol: 'DOGE', name: 'Dogecoin', current_price: 0.095, price_change_percentage_24h: 2.3, image: 'https://coin-images.coingecko.com/coins/images/5/large/dogecoin.png' },
+                { id: 'cosmos', symbol: 'ATOM', name: 'Cosmos', current_price: 8.1, price_change_percentage_24h: 2.1, image: 'https://coin-images.coingecko.com/coins/images/1481/large/cosmos_hub.png' }
+              ],
+              source: 'fallback',
+              timestamp: Date.now()
+            };
           }),
         ]),
         timeoutPromise
       ]) as [any, any, any];
 
-      console.log('CoinGecko data:', coinGeckoData ? `Success (${coinGeckoData.length} coins)` : 'Failed');
-      console.log('Binance data:', binanceData ? 'Success' : 'Failed');
-      console.log('Top Gainers data:', topGainers ? `Success (${topGainers.data?.length || 0} gainers from ${topGainers.source})` : 'Failed');
+      console.log('✅ CoinGecko data:', coinGeckoData ? `Success (${coinGeckoData.length} coins)` : '❌ Failed');
+      console.log('✅ Binance data:', binanceData ? 'Success' : '❌ Failed');
+      console.log('✅ Top Gainers data:', topGainers ? `Success (${topGainers.data?.length || 0} gainers from ${topGainers.source})` : '❌ Failed');
 
       // If both APIs fail on mobile, provide fallback data
       if (!coinGeckoData && !binanceData) {
@@ -442,10 +420,10 @@ export default function CryptoDashboard() {
   return (
     <div className="min-h-screen text-white" style={{ backgroundColor: COLORS.background }}>
       {/* Header */}
-      <header className="border-b sticky top-0 z-50" style={{ backgroundColor: COLORS.surface, borderColor: COLORS.deepIndigo }}>
+      <header className="border-b sticky top-0 z-50 overflow-visible" style={{ backgroundColor: COLORS.surface, borderColor: COLORS.deepIndigo }}>
         <div className="container mx-auto px-4 sm:px-6">
           {/* Main Title Row */}
-          <div className="flex items-center justify-between py-4 sm:py-6">
+          <div className="flex items-center justify-between py-6 sm:py-8">
             <div className="flex items-center space-x-2 sm:space-x-4 min-w-0 flex-1">
               <div className="flex items-center space-x-3 min-w-0">
                 <TeroxxLogo 
@@ -494,11 +472,11 @@ export default function CryptoDashboard() {
           </div>
           
           {/* Navigation Tabs Row */}
-          <div className="border-t pb-4" style={{ borderColor: COLORS.deepIndigo, position: 'relative' }}>
-            <nav className="flex space-x-1 py-3 overflow-x-auto hide-scrollbar" style={{ position: 'static' }}>
+          <div className="border-t pb-32" style={{ borderColor: COLORS.deepIndigo, position: 'relative' }}>
+            <nav className="flex space-x-1 py-4 overflow-x-auto hide-scrollbar" style={{ position: 'static' }}>
               <button 
                 onClick={() => setActiveTab('overview')}
-                className="px-4 sm:px-8 py-3 sm:py-4 rounded-t-lg font-medium border-b-2 text-sm whitespace-nowrap flex-shrink-0 transition-all focus-mobile"
+                className="px-4 sm:px-8 py-4 sm:py-5 rounded-t-lg font-medium border-b-2 text-sm whitespace-nowrap flex-shrink-0 transition-all focus-mobile"
                 style={{ 
                   backgroundColor: activeTab === 'overview' ? COLORS.electricSky + '20' : 'transparent', 
                   color: activeTab === 'overview' ? COLORS.electricSky : COLORS.neutral,
@@ -518,7 +496,7 @@ export default function CryptoDashboard() {
                     setMarketDropdownOpen(!marketDropdownOpen);
                     setResearchDropdownOpen(false); // Close other dropdown
                   }}
-                  className="px-4 sm:px-8 py-3 sm:py-4 rounded-t-lg font-medium border-b-2 text-sm whitespace-nowrap flex-shrink-0 transition-all focus-mobile"
+                  className="px-4 sm:px-8 py-4 sm:py-5 rounded-t-lg font-medium border-b-2 text-sm whitespace-nowrap flex-shrink-0 transition-all focus-mobile"
                   style={{ 
                     backgroundColor: activeTab === 'gainers-losers' ? COLORS.electricSky + '20' : 'transparent',
                     color: activeTab === 'gainers-losers' ? COLORS.electricSky : COLORS.neutral,
@@ -535,7 +513,7 @@ export default function CryptoDashboard() {
                 {/* Market Dropdown Menu */}
                 {marketDropdownOpen && (
                   <div 
-                    className="absolute top-full left-0 mt-2 py-3 w-52 rounded-lg shadow-xl border z-50"
+                    className="absolute top-full left-0 mt-2 py-3 w-52 rounded-lg shadow-xl border z-[60]"
                     style={{ 
                       backgroundColor: COLORS.surface,
                       borderColor: COLORS.deepIndigo,
@@ -571,7 +549,7 @@ export default function CryptoDashboard() {
                     setResearchDropdownOpen(!researchDropdownOpen);
                     setMarketDropdownOpen(false); // Close other dropdown
                   }}
-                  className="px-4 sm:px-8 py-3 sm:py-4 rounded-t-lg font-medium text-sm transition-all border-b-2 flex-shrink-0 whitespace-nowrap focus-mobile"
+                  className="px-4 sm:px-8 py-4 sm:py-5 rounded-t-lg font-medium text-sm transition-all border-b-2 flex-shrink-0 whitespace-nowrap focus-mobile"
                   style={{ 
                     backgroundColor: activeTab === 'analysis' ? COLORS.sunsetEmber + '20' : 'transparent',
                     color: activeTab === 'analysis' ? COLORS.sunsetEmber : COLORS.neutral,
@@ -588,7 +566,7 @@ export default function CryptoDashboard() {
                 {/* Research Dropdown Menu */}
                 {researchDropdownOpen && (
                   <div 
-                    className="absolute top-full left-0 mt-2 py-3 w-60 rounded-lg shadow-xl border z-50"
+                    className="absolute top-full left-0 mt-2 py-3 w-60 rounded-lg shadow-xl border z-[60]"
                     style={{ 
                       backgroundColor: COLORS.surface,
                       borderColor: COLORS.deepIndigo,
@@ -619,7 +597,7 @@ export default function CryptoDashboard() {
               
               <button 
                 onClick={() => setActiveTab('news')}
-                className="px-4 sm:px-8 py-3 sm:py-4 rounded-t-lg font-medium border-b-2 text-sm whitespace-nowrap flex-shrink-0 transition-all focus-mobile"
+                className="px-4 sm:px-8 py-4 sm:py-5 rounded-t-lg font-medium border-b-2 text-sm whitespace-nowrap flex-shrink-0 transition-all focus-mobile"
                 style={{ 
                   backgroundColor: activeTab === 'news' ? COLORS.electricSky + '20' : 'transparent',
                   color: activeTab === 'news' ? COLORS.electricSky : COLORS.neutral,
@@ -633,7 +611,7 @@ export default function CryptoDashboard() {
               </button>
               
               <div 
-                className="px-4 sm:px-8 py-3 sm:py-4 rounded-t-lg font-medium text-sm opacity-50 cursor-not-allowed border-b-2 border-transparent flex-shrink-0 whitespace-nowrap"
+                className="px-4 sm:px-8 py-4 sm:py-5 rounded-t-lg font-medium text-sm opacity-50 cursor-not-allowed border-b-2 border-transparent flex-shrink-0 whitespace-nowrap"
                 style={{ 
                   backgroundColor: COLORS.deepIndigo + '50',
                   color: COLORS.neutral
@@ -647,7 +625,7 @@ export default function CryptoDashboard() {
               </div>
               
               <div 
-                className="px-4 sm:px-8 py-3 sm:py-4 rounded-t-lg font-medium text-sm opacity-50 cursor-not-allowed border-b-2 border-transparent flex-shrink-0 whitespace-nowrap"
+                className="px-4 sm:px-8 py-4 sm:py-5 rounded-t-lg font-medium text-sm opacity-50 cursor-not-allowed border-b-2 border-transparent flex-shrink-0 whitespace-nowrap"
                 style={{ 
                   backgroundColor: COLORS.deepIndigo + '50',
                   color: COLORS.neutral
