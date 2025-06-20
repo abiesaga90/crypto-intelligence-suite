@@ -445,42 +445,42 @@ export default function CryptoDashboard() {
       <header className="border-b sticky top-0 z-50" style={{ backgroundColor: COLORS.surface, borderColor: COLORS.deepIndigo }}>
         <div className="container mx-auto px-4 sm:px-6">
           {/* Main Title Row */}
-          <div className="flex items-center justify-between py-3 sm:py-4">
+          <div className="flex items-center justify-between py-4 sm:py-6">
             <div className="flex items-center space-x-2 sm:space-x-4 min-w-0 flex-1">
               <div className="flex items-center space-x-3 min-w-0">
                 <TeroxxLogo 
-                  height={28} 
-                  width={28}
+                  height={32} 
+                  width={32}
                   showText={false}
                   color={COLORS.electricSky}
                   className="flex-shrink-0"
                 />
-                <h1 className="text-lg sm:text-2xl font-bold truncate" style={{ color: COLORS.sandstone }}>Teroxx Terminal</h1>
-                <span className="hidden sm:inline text-xs sm:text-sm px-2 py-1 rounded flex-shrink-0" style={{ backgroundColor: COLORS.sunsetEmber, color: COLORS.white }}>
+                <h1 className="text-xl sm:text-3xl font-bold truncate" style={{ color: COLORS.sandstone }}>Teroxx Terminal</h1>
+                <span className="hidden sm:inline text-sm px-3 py-1 rounded flex-shrink-0" style={{ backgroundColor: COLORS.sunsetEmber, color: COLORS.white }}>
                   Prototype
                 </span>
               </div>
-              <div className="hidden lg:block text-sm flex-shrink-0" style={{ color: COLORS.neutral }}>
+              <div className="hidden lg:block text-base flex-shrink-0" style={{ color: COLORS.neutral }}>
                 Advanced Crypto Market Intelligence
               </div>
             </div>
             
             <div className="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
-              <div className="hidden sm:block text-xs sm:text-sm" style={{ color: COLORS.neutral }}>
+              <div className="hidden sm:block text-sm" style={{ color: COLORS.neutral }}>
                 <div className="flex items-center space-x-2">
-                  <Zap className="h-3 w-3 sm:h-4 sm:w-4" style={{ color: COLORS.electricSky }} />
+                  <Zap className="h-4 w-4" style={{ color: COLORS.electricSky }} />
                   <span>API: {rateLimitInfo.remaining}/30</span>
                 </div>
               </div>
               
-              <div className="hidden md:block text-xs sm:text-sm" style={{ color: COLORS.neutral }}>
+              <div className="hidden md:block text-sm" style={{ color: COLORS.neutral }}>
                 Last update: {data.lastUpdate ? formatTimeAgo(data.lastUpdate) : 'Never'}
               </div>
               
               <button
                 onClick={handleRefresh}
                 disabled={refreshing}
-                className="flex items-center space-x-1 sm:space-x-2 px-2 sm:px-3 py-2 rounded-lg transition-colors focus-mobile"
+                className="flex items-center space-x-1 sm:space-x-2 px-3 py-2 rounded-lg transition-colors focus-mobile"
                 style={{ 
                   backgroundColor: refreshing ? COLORS.deepIndigo : COLORS.electricSky,
                   color: COLORS.white
@@ -494,19 +494,19 @@ export default function CryptoDashboard() {
           </div>
           
           {/* Navigation Tabs Row */}
-          <div className="border-t" style={{ borderColor: COLORS.deepIndigo, position: 'relative' }}>
-            <nav className="flex space-x-1 py-2 overflow-x-auto hide-scrollbar" style={{ position: 'static' }}>
+          <div className="border-t pb-4" style={{ borderColor: COLORS.deepIndigo, position: 'relative' }}>
+            <nav className="flex space-x-1 py-3 overflow-x-auto hide-scrollbar" style={{ position: 'static' }}>
               <button 
                 onClick={() => setActiveTab('overview')}
-                className="px-3 sm:px-6 py-2 sm:py-3 rounded-t-lg font-medium border-b-2 text-xs sm:text-sm whitespace-nowrap flex-shrink-0 transition-all focus-mobile"
+                className="px-4 sm:px-8 py-3 sm:py-4 rounded-t-lg font-medium border-b-2 text-sm whitespace-nowrap flex-shrink-0 transition-all focus-mobile"
                 style={{ 
                   backgroundColor: activeTab === 'overview' ? COLORS.electricSky + '20' : 'transparent', 
                   color: activeTab === 'overview' ? COLORS.electricSky : COLORS.neutral,
                   borderColor: activeTab === 'overview' ? COLORS.electricSky : 'transparent'
                 }}
               >
-                <div className="flex items-center space-x-1 sm:space-x-2">
-                  <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4" />
+                <div className="flex items-center space-x-2">
+                  <BarChart3 className="h-4 w-4" />
                   <span>Home</span>
                 </div>
               </button>
@@ -518,24 +518,24 @@ export default function CryptoDashboard() {
                     setMarketDropdownOpen(!marketDropdownOpen);
                     setResearchDropdownOpen(false); // Close other dropdown
                   }}
-                  className="px-3 sm:px-6 py-2 sm:py-3 rounded-t-lg font-medium border-b-2 text-xs sm:text-sm whitespace-nowrap flex-shrink-0 transition-all focus-mobile"
+                  className="px-4 sm:px-8 py-3 sm:py-4 rounded-t-lg font-medium border-b-2 text-sm whitespace-nowrap flex-shrink-0 transition-all focus-mobile"
                   style={{ 
                     backgroundColor: activeTab === 'gainers-losers' ? COLORS.electricSky + '20' : 'transparent',
                     color: activeTab === 'gainers-losers' ? COLORS.electricSky : COLORS.neutral,
                     borderColor: activeTab === 'gainers-losers' ? COLORS.electricSky : 'transparent'
                   }}
                 >
-                  <div className="flex items-center space-x-1 sm:space-x-2">
-                    <LineChart className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <div className="flex items-center space-x-2">
+                    <LineChart className="h-4 w-4" />
                     <span>Market</span>
-                    <ChevronDown className={`h-3 w-3 sm:h-4 sm:w-4 transition-transform ${marketDropdownOpen ? 'rotate-180' : ''}`} />
+                    <ChevronDown className={`h-4 w-4 transition-transform ${marketDropdownOpen ? 'rotate-180' : ''}`} />
                   </div>
                 </button>
                 
                 {/* Market Dropdown Menu */}
                 {marketDropdownOpen && (
                   <div 
-                    className="absolute top-full left-0 mt-1 py-2 w-48 rounded-lg shadow-xl border z-50"
+                    className="absolute top-full left-0 mt-2 py-3 w-52 rounded-lg shadow-xl border z-50"
                     style={{ 
                       backgroundColor: COLORS.surface,
                       borderColor: COLORS.deepIndigo,
@@ -547,14 +547,14 @@ export default function CryptoDashboard() {
                         setActiveTab('gainers-losers');
                         setMarketDropdownOpen(false);
                       }}
-                      className="w-full px-4 py-2 text-left text-sm transition-colors"
+                      className="w-full px-4 py-3 text-left text-sm transition-colors"
                       style={{ 
                         color: COLORS.neutral
                       }}
                       onMouseEnter={(e) => e.currentTarget.style.backgroundColor = COLORS.electricSky + '20'}
                       onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     >
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-3">
                         <TrendingUp className="h-4 w-4" />
                         <TrendingDown className="h-4 w-4" />
                         <span>Top 10 Gainers & Losers</span>
@@ -571,24 +571,24 @@ export default function CryptoDashboard() {
                     setResearchDropdownOpen(!researchDropdownOpen);
                     setMarketDropdownOpen(false); // Close other dropdown
                   }}
-                  className="px-3 sm:px-6 py-2 sm:py-3 rounded-t-lg font-medium text-xs sm:text-sm transition-all border-b-2 flex-shrink-0 whitespace-nowrap focus-mobile"
+                  className="px-4 sm:px-8 py-3 sm:py-4 rounded-t-lg font-medium text-sm transition-all border-b-2 flex-shrink-0 whitespace-nowrap focus-mobile"
                   style={{ 
                     backgroundColor: activeTab === 'analysis' ? COLORS.sunsetEmber + '20' : 'transparent',
                     color: activeTab === 'analysis' ? COLORS.sunsetEmber : COLORS.neutral,
                     borderColor: activeTab === 'analysis' ? COLORS.sunsetEmber : 'transparent'
                   }}
                 >
-                  <div className="flex items-center space-x-1 sm:space-x-2">
-                    <Search className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <div className="flex items-center space-x-2">
+                    <Search className="h-4 w-4" />
                     <span>Research</span>
-                    <ChevronDown className={`h-3 w-3 sm:h-4 sm:w-4 transition-transform ${researchDropdownOpen ? 'rotate-180' : ''}`} />
+                    <ChevronDown className={`h-4 w-4 transition-transform ${researchDropdownOpen ? 'rotate-180' : ''}`} />
                   </div>
                 </button>
                 
                 {/* Research Dropdown Menu */}
                 {researchDropdownOpen && (
                   <div 
-                    className="absolute top-full left-0 mt-1 py-2 w-56 rounded-lg shadow-xl border z-50"
+                    className="absolute top-full left-0 mt-2 py-3 w-60 rounded-lg shadow-xl border z-50"
                     style={{ 
                       backgroundColor: COLORS.surface,
                       borderColor: COLORS.deepIndigo,
@@ -619,21 +619,21 @@ export default function CryptoDashboard() {
               
               <button 
                 onClick={() => setActiveTab('news')}
-                className="px-3 sm:px-6 py-2 sm:py-3 rounded-t-lg font-medium border-b-2 text-xs sm:text-sm whitespace-nowrap flex-shrink-0 transition-all focus-mobile"
+                className="px-4 sm:px-8 py-3 sm:py-4 rounded-t-lg font-medium border-b-2 text-sm whitespace-nowrap flex-shrink-0 transition-all focus-mobile"
                 style={{ 
                   backgroundColor: activeTab === 'news' ? COLORS.electricSky + '20' : 'transparent',
                   color: activeTab === 'news' ? COLORS.electricSky : COLORS.neutral,
                   borderColor: activeTab === 'news' ? COLORS.electricSky : 'transparent'
                 }}
               >
-                <div className="flex items-center space-x-1 sm:space-x-2">
-                  <Newspaper className="h-3 w-3 sm:h-4 sm:w-4" />
+                <div className="flex items-center space-x-2">
+                  <Newspaper className="h-4 w-4" />
                   <span>📰 News</span>
                 </div>
               </button>
               
               <div 
-                className="px-6 py-3 rounded-t-lg font-medium text-sm opacity-50 cursor-not-allowed border-b-2 border-transparent flex-shrink-0 whitespace-nowrap"
+                className="px-4 sm:px-8 py-3 sm:py-4 rounded-t-lg font-medium text-sm opacity-50 cursor-not-allowed border-b-2 border-transparent flex-shrink-0 whitespace-nowrap"
                 style={{ 
                   backgroundColor: COLORS.deepIndigo + '50',
                   color: COLORS.neutral
@@ -647,7 +647,7 @@ export default function CryptoDashboard() {
               </div>
               
               <div 
-                className="px-6 py-3 rounded-t-lg font-medium text-sm opacity-50 cursor-not-allowed border-b-2 border-transparent flex-shrink-0 whitespace-nowrap"
+                className="px-4 sm:px-8 py-3 sm:py-4 rounded-t-lg font-medium text-sm opacity-50 cursor-not-allowed border-b-2 border-transparent flex-shrink-0 whitespace-nowrap"
                 style={{ 
                   backgroundColor: COLORS.deepIndigo + '50',
                   color: COLORS.neutral
