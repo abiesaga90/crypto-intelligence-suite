@@ -106,6 +106,7 @@ export const COLORS = {
   sandstone: '#bfb3a8',      // Sandstone - neutral/text
   sunsetEmber: '#d06643',    // Sunset Ember - warning/accent
   deepIndigo: '#060043',     // Deep Indigo - secondary dark
+  emeraldGreen: '#10b981',   // Emerald Green - success/positive
   white: '#ffffff',          // White
   black: '#000000',          // Black
 

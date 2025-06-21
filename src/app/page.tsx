@@ -81,6 +81,15 @@ export default function CryptoDashboard() {
   const [strategiesDropdownOpen, setStrategiesDropdownOpen] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState<{[key: string]: {top?: number, bottom?: number, left: number}}>({});
 
+  // Handle URL parameter navigation
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabParam = urlParams.get('tab');
+    if (tabParam && ['overview', 'analysis', 'gainers-losers', 'news'].includes(tabParam)) {
+      setActiveTab(tabParam as 'overview' | 'analysis' | 'gainers-losers' | 'news');
+    }
+  }, []);
+
   // Viewport-aware dropdown positioning
   const calculateDropdownPosition = (triggerElement: HTMLElement, dropdownKey: string) => {
     const rect = triggerElement.getBoundingClientRect();
@@ -109,6 +118,8 @@ export default function CryptoDashboard() {
     const triggerElement = event.currentTarget as HTMLElement;
     const position = calculateDropdownPosition(triggerElement, dropdownType);
     
+    console.log(`🔽 Opening ${dropdownType} dropdown`);
+    
     setDropdownPosition(prev => ({
       ...prev,
       [dropdownType]: position
@@ -117,9 +128,13 @@ export default function CryptoDashboard() {
     if (dropdownType === 'market') {
       setMarketDropdownOpen(true);
       setResearchDropdownOpen(false);
+      setStrategiesDropdownOpen(false);
+      console.log('✅ Market dropdown opened, others closed');
     } else {
       setResearchDropdownOpen(true);
       setMarketDropdownOpen(false);
+      setStrategiesDropdownOpen(false);
+      console.log('✅ Research dropdown opened, others closed');
     }
   };
 
@@ -172,10 +187,10 @@ export default function CryptoDashboard() {
           },
           retailVsInstitutional: [],
           globalStats: {
-            total_market_cap: { usd: 1750000000000 },
-            total_volume: { usd: 65000000000 },
-            market_cap_percentage: { btc: 48.5, eth: 16.8 },
-            active_cryptocurrencies: 12500
+            total_market_cap: { usd: 3331174191676 }, // Real current value from CoinGecko
+            total_volume: { usd: 94813536641 },        // Real current volume
+            market_cap_percentage: { btc: 61.99, eth: 8.85 }, // Real current dominance
+            active_cryptocurrencies: 17506
           },
           coinglassStats: null,
           loading: false,
@@ -255,37 +270,31 @@ export default function CryptoDashboard() {
           { id: 'ethereum', symbol: 'eth', name: 'Ethereum', current_price: 2600, price_change_percentage_24h: 3.2, market_cap: 320000000000, total_volume: 15000000000, image: 'https://coin-images.coingecko.com/coins/images/279/large/ethereum.png', market_cap_rank: 2 }
         ];
 
-        // Try to get global stats quickly
+        // Calculate global stats from actual coin data instead of failing API
         let globalStats = null;
-        try {
-          console.log('Attempting to fetch global stats...');
-          globalStats = await Promise.race([
-            apiService.getCoinGeckoGlobalData().catch((error) => {
-              console.log('Global stats API failed:', error.message);
-              return null;
-            }),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Global stats timeout')), 3000))
-          ]);
-          globalStats = globalStats?.data || null;
-          console.log('✅ Global stats loaded successfully');
-        } catch (error: any) {
-          console.log('⚠️ Global stats failed, using defaults:', error.message);
+        if (topCoinsData && topCoinsData.length > 0) {
+          const totalMarketCap = topCoinsData.reduce((sum: number, coin: any) => sum + (coin.market_cap || 0), 0);
+          const totalVolume = topCoinsData.reduce((sum: number, coin: any) => sum + (coin.total_volume || 0), 0);
+          const btcCoin = topCoinsData.find((coin: any) => coin.symbol === 'btc');
+          const ethCoin = topCoinsData.find((coin: any) => coin.symbol === 'eth');
+          
           globalStats = {
-            total_market_cap: { usd: 1750000000000 },
-            total_volume: { usd: 65000000000 },
-            market_cap_percentage: { btc: 48.5, eth: 16.8 },
-            active_cryptocurrencies: 12500
+            total_market_cap: { usd: Math.round(totalMarketCap * 1.15) }, // Top 30 coins are ~87% of market, so multiply by 1.15
+            total_volume: { usd: totalVolume }, // Don't multiply volume - it's already accurate
+            market_cap_percentage: { 
+              btc: btcCoin ? (btcCoin.market_cap / totalMarketCap) * 100 : 62,
+              eth: ethCoin ? (ethCoin.market_cap / totalMarketCap) * 100 : 13
+            },
+            active_cryptocurrencies: 17500
           };
-        }
-
-        // Ensure we always have valid global stats
-        if (!globalStats) {
-          console.log('🔄 Providing default global stats');
+          console.log('✅ Global stats calculated from coin data');
+        } else {
+          console.log('🔄 Using realistic fallback global stats');
           globalStats = {
-            total_market_cap: { usd: 1750000000000 },
-            total_volume: { usd: 65000000000 },
-            market_cap_percentage: { btc: 48.5, eth: 16.8 },
-            active_cryptocurrencies: 12500
+            total_market_cap: { usd: 3331174191676 }, // Real current value from CoinGecko
+            total_volume: { usd: 94813536641 },        // Real current volume
+            market_cap_percentage: { btc: 61.99, eth: 8.85 }, // Real current dominance
+            active_cryptocurrencies: 17506
           };
         }
 
@@ -347,6 +356,13 @@ export default function CryptoDashboard() {
         setResearchDropdownOpen(false);
         setStrategiesDropdownOpen(false);
       }
+    };
+
+    // Close all dropdowns when navigating
+    const closeAllDropdowns = () => {
+      setMarketDropdownOpen(false);
+      setResearchDropdownOpen(false);
+      setStrategiesDropdownOpen(false);
     };
 
     document.addEventListener('mousedown', handleClickOutside);
@@ -605,7 +621,7 @@ export default function CryptoDashboard() {
               </div>
               
               {/* Research Dropdown */}
-              <div className="relative">
+              <div className="relative" data-dropdown="research">
                 <button 
                   onClick={(event) => openDropdown('research', event)}
                   className="px-4 sm:px-6 py-2 sm:py-3 rounded-t-lg font-medium text-sm transition-all border-b-2 flex-shrink-0 whitespace-nowrap focus-mobile"
@@ -625,7 +641,7 @@ export default function CryptoDashboard() {
                 {/* Research Dropdown Menu */}
                 {researchDropdownOpen && (
                   <div 
-                    className="fixed py-3 w-60 rounded-lg shadow-xl border z-[70]"
+                    className="fixed py-3 w-60 rounded-lg shadow-xl border z-[80] max-h-[80vh] overflow-y-auto"
                     style={{ 
                       backgroundColor: COLORS.surface,
                       borderColor: COLORS.deepIndigo,
@@ -658,52 +674,104 @@ export default function CryptoDashboard() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
+                          console.log('Strategies button clicked, current state:', strategiesDropdownOpen);
                           setStrategiesDropdownOpen(!strategiesDropdownOpen);
                         }}
                         className="w-full px-4 py-2 text-left text-sm transition-colors"
                         style={{ 
-                          color: COLORS.neutral
+                          color: COLORS.neutral,
+                          backgroundColor: strategiesDropdownOpen ? COLORS.sunsetEmber + '20' : 'transparent'
                         }}
                         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = COLORS.sunsetEmber + '20'}
-                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = strategiesDropdownOpen ? COLORS.sunsetEmber + '20' : 'transparent'}
+                        aria-expanded={strategiesDropdownOpen}
+                        aria-controls="strategies-submenu"
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-2">
                             <Target className="h-4 w-4" />
                             <span>Strategies</span>
                           </div>
-                          <ChevronDown className={`h-3 w-3 transition-transform ${strategiesDropdownOpen ? 'rotate-180' : '-rotate-90'}`} />
+                          <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${strategiesDropdownOpen ? 'rotate-0' : '-rotate-90'}`} />
                         </div>
                       </button>
                       
-                      {/* Strategies Submenu Items */}
+                      {/* Strategies Submenu Items - Enhanced visibility */}
                       {strategiesDropdownOpen && (
                         <div 
-                          className="ml-4 border-l-2 border-opacity-30"
-                          style={{ borderColor: COLORS.electricSky }}
+                          id="strategies-submenu"
+                          className="ml-4 border-l-2 border-opacity-50 py-2 mt-1 rounded-r-md"
+                          style={{ 
+                            borderColor: COLORS.electricSky,
+                            backgroundColor: COLORS.surface + '95',
+                            boxShadow: 'inset 3px 0 5px rgba(0,0,0,0.1)'
+                          }}
                         >
                           <button
-                            onClick={() => {
-                              // TODO: Navigate to Funding Arbitrage page
-                              alert('🚀 Funding Arbitrage strategy coming soon!\n\nThis will include:\n• Cross-exchange funding rate monitoring\n• Arbitrage opportunity detection\n• Risk/reward calculations\n• Automated strategy recommendations');
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              console.log('Funding Arbitrage clicked');
+                              window.location.href = '/funding-arbitrage';
                               setResearchDropdownOpen(false);
                               setStrategiesDropdownOpen(false);
                             }}
-                            className="w-full px-4 py-2 text-left text-sm transition-colors"
+                            className="w-full px-4 py-3 text-left text-sm transition-all duration-200 hover:scale-[1.02] transform rounded-r"
                             style={{ 
                               color: COLORS.neutral
                             }}
-                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = COLORS.electricSky + '20'}
-                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = COLORS.electricSky + '25';
+                              e.currentTarget.style.color = COLORS.electricSky;
+                              e.currentTarget.style.paddingLeft = '20px';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = 'transparent';
+                              e.currentTarget.style.color = COLORS.neutral;
+                              e.currentTarget.style.paddingLeft = '16px';
+                            }}
                           >
-                            <div className="flex items-center space-x-2">
-                              <DollarSign className="h-3 w-3" />
-                              <span>Funding Arbitrage</span>
-                              <span className="text-xs px-1.5 py-0.5 rounded" style={{ 
-                                backgroundColor: COLORS.electricSky + '30',
-                                color: COLORS.electricSky
+                            <div className="flex items-center space-x-3">
+                              <DollarSign className="h-4 w-4" />
+                              <span className="font-medium">Funding Arbitrage</span>
+                              <span className="text-xs px-2 py-1 rounded animate-pulse font-bold" style={{ 
+                                backgroundColor: COLORS.sunsetEmber + '40',
+                                color: COLORS.sunsetEmber,
+                                border: `1px solid ${COLORS.sunsetEmber}50`
                               }}>
-                                Coming Soon
+                                Live
+                              </span>
+                            </div>
+                          </button>
+                          
+                          {/* Add more strategy items here in the future */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              alert('Coming Soon: Advanced DCA Strategy Tools');
+                              setResearchDropdownOpen(false);
+                              setStrategiesDropdownOpen(false);
+                            }}
+                            className="w-full px-4 py-3 text-left text-sm transition-colors opacity-60 cursor-help rounded-r"
+                            style={{ 
+                              color: COLORS.neutral
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = COLORS.neutral + '10';
+                              e.currentTarget.style.paddingLeft = '20px';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = 'transparent';
+                              e.currentTarget.style.paddingLeft = '16px';
+                            }}
+                          >
+                            <div className="flex items-center space-x-3">
+                              <LineChart className="h-4 w-4" />
+                              <span>DCA Strategy</span>
+                              <span className="text-xs px-2 py-1 rounded" style={{ 
+                                backgroundColor: COLORS.neutral + '20',
+                                color: COLORS.neutral + 'CC'
+                              }}>
+                                Soon
                               </span>
                             </div>
                           </button>
@@ -714,6 +782,39 @@ export default function CryptoDashboard() {
                 )}
               </div>
               
+              {/* Funding Arbitrage Tab */}
+              <button 
+                onClick={() => window.location.href = '/funding-arbitrage'}
+                className="px-4 sm:px-6 py-2 sm:py-3 rounded-t-lg font-medium text-sm transition-all border-b-2 flex-shrink-0 whitespace-nowrap focus-mobile"
+                style={{ 
+                  backgroundColor: 'transparent',
+                  color: COLORS.neutral,
+                  borderColor: 'transparent'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = COLORS.sunsetEmber + '20';
+                  e.currentTarget.style.color = COLORS.sunsetEmber;
+                  e.currentTarget.style.borderColor = COLORS.sunsetEmber;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.color = COLORS.neutral;
+                  e.currentTarget.style.borderColor = 'transparent';
+                }}
+              >
+                <div className="flex items-center space-x-2">
+                  <DollarSign className="h-4 w-4" />
+                  <span>Funding Arbitrage</span>
+                  <span className="text-xs px-2 py-1 rounded animate-pulse font-bold" style={{ 
+                    backgroundColor: COLORS.sunsetEmber + '40',
+                    color: COLORS.sunsetEmber,
+                    border: `1px solid ${COLORS.sunsetEmber}50`
+                  }}>
+                    Live
+                  </span>
+                </div>
+              </button>
+
               <div 
                 className="px-4 sm:px-6 py-2 sm:py-3 rounded-t-lg font-medium text-sm opacity-50 cursor-not-allowed border-b-2 border-transparent flex-shrink-0 whitespace-nowrap"
                 style={{ 
@@ -974,12 +1075,14 @@ function DashboardOverviewTab({ data, selectedCrypto, setSelectedCrypto }: {
           </div>
           {data.topGainersData && (
             <span className="text-xs sm:text-sm px-2 py-1 rounded" style={{ backgroundColor: COLORS.electricSky + '20', color: COLORS.electricSky }}>
-              via {data.topGainersData.source === 'coingecko' ? 'CoinGecko' : data.topGainersData.source === 'binance' ? 'Binance' : 'Cached'}
+              via {data.topGainersData.gainers?.[0]?.source === 'CoinGecko' ? 'CoinGecko' : 
+                   data.topGainersData.gainers?.[0]?.source === 'binance' ? 'Binance' : 
+                   data.topGainersData.gainers?.[0]?.source === 'coinglass' ? 'CoinGlass' : 'Cached'}
             </span>
           )}
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-          {(data.topCoins || []).map((coin: any, index: number) => (
+          {(data.topGainersData?.gainers || data.topCoins || []).map((coin: any, index: number) => (
             <div key={coin.id || index} className="bg-gray-800 p-3 sm:p-4 rounded-lg border border-gray-700 hover:border-gray-600 transition-colors">
               <div className="flex items-center space-x-2 sm:space-x-3">
                 {coin.image && (
